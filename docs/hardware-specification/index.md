@@ -1,7 +1,3 @@
-docs/specs/addressing_modes.md
-docs/specs/index.md
-docs/specs/registers.md
-
 # 6502 — Índice
 
 Referência técnica do MPU 6502 dividida em 4 arquivos, cada um cobrindo uma camada distinta (registradores → modos de endereçamento → instruções → opcodes). Carregue só o(s) arquivo(s) relevante(s) para a pergunta — não é necessário ler tudo.
