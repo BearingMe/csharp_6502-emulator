@@ -12,7 +12,7 @@ MOS 6502 Emulator implemented in .NET 9 (C# 13).
   - `src/Opcodes/` — Opcode implementations and instruction decoders.
 - `tests/` — Unit and integration test suite.
 - `docs/` — Specifications and AI agent harness context.
-  - `docs/specs/` — MOS 6502 hardware specs (registers, opcodes, addressing modes).
+  - `docs/hardware-specification/` — MOS 6502 hardware specs (registers, opcodes, addressing modes).
 
 ## Dependency Rules
 

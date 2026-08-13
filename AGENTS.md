@@ -22,7 +22,7 @@ dotnet clean
 ```
 
 ## Overview
-C# 65 emulator study project. Knowledge assistance & test writing only.
+C# 6502 emulator study project. Knowledge assistance & test writing only.
 
 ## Context & Detailed Guidelines
 - Architecture & Module Boundaries: See `docs/architecture.md`
