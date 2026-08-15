@@ -36,7 +36,7 @@ C# 6502 emulator study project. Knowledge assistance & test writing only.
 - **No external dependencies**: Core emulator logic must remain standard library pure .NET 9.
 
 ## Unit Tests
-- Every instruction has exactly 1 unit test function using xUnit [Theory] with [InlineData] for branches.
+- Every instruction has exactly 1 unit test function for each addressing mode using xUnit [Theory] with [InlineData] for branches.
 - Verify expected target changes and assert non-targeted state remains unmodified.
 
 ## Regression Tests
