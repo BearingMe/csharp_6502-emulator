@@ -34,9 +34,11 @@ C# 6502 emulator study project. Knowledge assistance & test writing only.
 - **Fixed-width integer usage**: Always use explicit integer types (`byte`, `ushort`) for 6502 registers and 16-bit address memory pointers.
 - **Architectural boundaries**: Business/emulator domain logic must remain pure and free from console/CLI dependencies.
 - **No external dependencies**: Core emulator logic must remain standard library pure .NET 9.
+- **Spec-Correct Assertions Only**: Tests MUST ALWAYS assert hardware-correct 6502 specification behavior per `docs/hardware-specification/index.md`. NEVER write assertions matching buggy or incorrect implementation behavior in `src/`.
 
 ## Unit Tests
-- Every instruction has exactly 1 unit test function for each addressing mode using xUnit [Theory] with [InlineData] for branches.
+- Every instruction has exactly 1 unit test function for each addressing mode using xUnit `[Theory]` with `[InlineData]` for branches.
+- Tests MUST assert true 6502 spec behavior (e.g. signed overflow flag `V` set when adding two positive values resulting in negative or two negative values resulting in positive).
 - Verify expected target changes and assert non-targeted state remains unmodified.
 
 ## Regression Tests
@@ -46,7 +48,8 @@ C# 6502 emulator study project. Knowledge assistance & test writing only.
 
 ## Never
 - Never edit src/.
-- Never write regression tests that expect buggy behavior or pass while bug exists.
+- Never write tests that expect buggy behavior or pass while a bug exists in `src/`.
+- Never weaken, modify, or adjust test assertions to match implementation bugs in `src/`.
 - Never weaken assertions to force a test pass.
 - Never run GUI/visual execution commands.
 - Never commit build output (`bin/`, `obj/`).
@@ -55,6 +58,5 @@ C# 6502 emulator study project. Knowledge assistance & test writing only.
 Work is complete ONLY when:
 1. All code follows architectural boundaries in `docs/architecture.md` and style conventions in `docs/styleguides/csharp.md`.
 2. `dotnet build` succeeds with zero errors/warnings.
-3. `dotnet test` succeeds and all unit/integration tests pass.
+3. `dotnet test` succeeds and all unit/integration tests pass (when domain code is spec-correct).
 4. @adversary review passes.
-
