@@ -79,13 +79,12 @@ class Cpu
         int operand = (int)instruction.Operand!;
         int temp = a + operand + (IsFlag(Status.Carry) ? 1 : 0);
 
-        a = ToByte(temp);
-
         SetFlag(Status.Carry, temp > 0xFF);
-        SetFlag(Status.Zero, a == 0);
+        SetFlag(Status.Zero, (temp & 0xFF) == 0);
         SetFlag(Status.Overflow, ToBool((temp ^ a) & (temp ^ operand) & 0b1000_0000));
         SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
 
+        a = ToByte(temp);
         break;
 
 
