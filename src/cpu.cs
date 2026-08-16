@@ -69,24 +69,100 @@ class Cpu
     return word > T.One;
   }
 
+  byte Peek(ushort address)
+  {
+    return memory[address];
+  }
+
+  void ADC(ushort operand)
+  {
+    int temp = a + operand + (IsFlag(Status.Carry) ? 1 : 0);
+
+    SetFlag(Status.Carry, temp > 0xFF);
+    SetFlag(Status.Zero, (temp & 0xFF) == 0);
+    SetFlag(Status.Overflow, ToBool((temp ^ a) & (temp ^ operand) & 0b1000_0000));
+    SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
+
+    a = ToByte(temp);
+  }
 
   public void Execute(Instruction instruction)
   {
+    ushort operand = instruction.Operand ?? 0x0000;
+    ushort value;
+
     switch (instruction.Opcode)
     {
       // ADC (Add with Carry)
+      // immediate
       case 0x69:
-        int operand = (int)instruction.Operand!;
-        int temp = a + operand + (IsFlag(Status.Carry) ? 1 : 0);
+        {
+          ADC(operand);
+          break;
+        }
 
-        SetFlag(Status.Carry, temp > 0xFF);
-        SetFlag(Status.Zero, (temp & 0xFF) == 0);
-        SetFlag(Status.Overflow, ToBool((temp ^ a) & (temp ^ operand) & 0b1000_0000));
-        SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
+      // zero page
+      case 0x65:
+        {
+          value = Peek((byte)operand);
+          ADC(value);
+          break;
+        }
 
-        a = ToByte(temp);
-        break;
+      // zero page + x
+      case 0x75:
+        {
+          value = Peek((byte)(operand + x));
+          ADC(value);
+          break;
+        }
 
+      // absolute
+      case 0x6D:
+        {
+          value = Peek(operand);
+          ADC(value);
+          break;
+        }
+
+      // absolute + x
+      case 0x7D:
+        {
+          value = Peek((ushort)(operand + x));
+          ADC(value);
+          break;
+        }
+
+      // absolute + y
+      case 0x79:
+        {
+          value = Peek((ushort)(operand + y));
+          ADC(value);
+          break;
+        }
+
+      // indirect x
+      case 0x61:
+        {
+
+          byte lo = Peek((byte)(operand + x));
+          byte hi = Peek((byte)(operand + x + 1));
+          value = Peek((ushort)(lo | (hi << 8)));
+
+          ADC(value);
+          break;
+        }
+
+      // indirect y
+      case 0x71:
+        {
+          byte lo = Peek(operand);
+          byte hi = Peek((byte)(operand + 1));
+          value = Peek((ushort)((lo | (hi << 8)) + y));
+
+          ADC(value);
+          break;
+        }
 
       // AND (Bitwise AND)
       // ASL (Arithmetic Shift Left)
