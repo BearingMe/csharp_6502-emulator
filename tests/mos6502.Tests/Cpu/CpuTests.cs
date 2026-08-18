@@ -1,5 +1,8 @@
 using FluentAssertions;
-using mos6502.src;
+using mos6502.src.Application;
+using mos6502.src.Domain.Entities;
+using mos6502.src.Domain.Enums;
+using mos6502.src.Domain.Objects;
 using mos6502.Tests.Helpers;
 
 namespace mos6502.Tests.Unit;
@@ -10,7 +13,8 @@ public class CpuTests
     public void Cpu_Constructor_InitializesRegistersAndMemoryCorrectly()
     {
         // Arrange & Act
-        var cpu = new mos6502.src.Cpu();
+        var bus = new Bus();
+        var cpu = new Cpu(bus);
 
         // Assert
         cpu.GetA().Should().Be(0);
@@ -22,49 +26,46 @@ public class CpuTests
         cpu.GetMemory().Should().HaveCount(0x10000);
     }
 
-    [Theory]
-    [InlineData(0x00FD, 0x00FA)]
-    [InlineData(0x00FF, 0x00FC)]
-    public void Reset_ResetsFlagsPcAndDecrementsStackPointer(ushort initialSp, ushort expectedSp)
+    [Fact]
+    public void Emulator_Reset_ResetsFlagsPcAndRegisters()
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(0x55);
-        cpu.SetX(0xAA);
-        cpu.SetY(0x33);
-        cpu.SetPc(0x1000);
-        cpu.SetSp(initialSp);
-        cpu.SetFlags(Status.Zero | Status.Negative);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(0x55);
+        emulator.Cpu.SetX(0xAA);
+        emulator.Cpu.SetY(0x33);
+        emulator.Cpu.SetPc(0x1000);
+        emulator.Cpu.SetSp(0x0150);
+        emulator.Cpu.SetFlags(Status.Zero | Status.Negative);
 
         // Act
-        cpu.Reset();
+        emulator.Reset();
 
         // Assert
-        cpu.GetFlags().Should().Be(Status.Interrupt);
-        cpu.GetPc().Should().Be(0xFFFC);
-        cpu.GetSp().Should().Be(expectedSp);
-
-        // Verify non-targeted registers remain unmodified
-        cpu.GetA().Should().Be(0x55);
-        cpu.GetX().Should().Be(0xAA);
-        cpu.GetY().Should().Be(0x33);
+        emulator.Cpu.GetFlags().Should().Be(Status.Interrupt);
+        emulator.Cpu.GetPc().Should().Be(0xFFFC);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetA().Should().Be(0);
+        emulator.Cpu.GetX().Should().Be(0);
+        emulator.Cpu.GetY().Should().Be(0);
     }
 
     [Theory]
     [InlineData(0xEA)] // NOP
     [InlineData(0x00)] // BRK
     [InlineData(0xFF)] // Invalid
-    public void Execute_UnknownOpcode_ThrowsException(byte opcode)
+    public void Step_UnknownOpcode_ThrowsException(byte opcode)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        var instruction = new Instruction(opcode, 0x00);
+        var emulator = new Emulator();
+        emulator.Cpu.SetPc(0x0200);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(opcode));
 
         // Act
-        Action act = () => cpu.Execute(instruction);
+        Action act = () => emulator.Step();
 
         // Assert
         act.Should().Throw<Exception>()
-           .WithMessage($"Unknown opcode: {instruction:X2}");
+           .WithMessage($"Unknown opcode: {opcode:X2}");
     }
 }

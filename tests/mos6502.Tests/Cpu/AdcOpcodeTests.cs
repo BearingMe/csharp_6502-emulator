@@ -1,5 +1,7 @@
 using FluentAssertions;
-using mos6502.src;
+using mos6502.src.Application;
+using mos6502.src.Domain.Enums;
+using mos6502.src.Domain.Objects;
 using mos6502.Tests.Helpers;
 
 namespace mos6502.Tests.Unit;
@@ -30,37 +32,38 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(0x42);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(0x42);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         Status initialFlags = Status.Interrupt;
         if (initialCarry)
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x69, operand);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x69));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits((byte)operand));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(0x42);
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
+        emulator.Cpu.GetX().Should().Be(0x42);
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0202);
     }
 
     [Theory]
@@ -88,41 +91,42 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(0x42);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(0x42);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         // Populate Zero Page memory
-        cpu.GetMemory()[zeroPageAddr] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(zeroPageAddr), new Unassigned8Bits(memoryValue));
 
         Status initialFlags = Status.Interrupt;
         if (initialCarry)
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x65, zeroPageAddr);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x65));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits(zeroPageAddr));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(0x42);
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[zeroPageAddr].Should().Be(memoryValue, "Memory at zero page address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(0x42);
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0202);
+        emulator.Bus.Read(new Unassigned16Bits(zeroPageAddr)).Value.Should().Be(memoryValue, "Memory at zero page address must remain unmodified");
     }
 
     [Theory]
@@ -150,26 +154,26 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(xRegister);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(xRegister);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         // Effective zero-page address wrapped to 8-bit range (0x00-0xFF) per 6502 spec
         byte effectiveAddr = (byte)(zeroPageAddr + xRegister);
 
         // Populate target Zero Page memory and set poison value at unwrapped Page 1 address and base address to verify indexing & wrapping
-        cpu.GetMemory()[effectiveAddr] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(effectiveAddr), new Unassigned8Bits(memoryValue));
         if (effectiveAddr != zeroPageAddr)
         {
-            cpu.GetMemory()[zeroPageAddr] = 0xDD; // Poison value if emulator incorrectly reads unindexed base address
+            emulator.Bus.Write(new Unassigned16Bits(zeroPageAddr), new Unassigned8Bits(0xDD)); // Poison value
         }
         ushort unwrappedAddr = (ushort)(zeroPageAddr + xRegister);
         if (unwrappedAddr > 0xFF)
         {
-            cpu.GetMemory()[unwrappedAddr] = 0xEE; // Poison value if emulator incorrectly accesses Page 1
+            emulator.Bus.Write(new Unassigned16Bits(unwrappedAddr), new Unassigned8Bits(0xEE)); // Poison value
         }
 
         Status initialFlags = Status.Interrupt;
@@ -177,26 +181,27 @@ public class AdcOpcodeTests
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x75, zeroPageAddr);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x75));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits(zeroPageAddr));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[effectiveAddr].Should().Be(memoryValue, "Memory at effective zero-page address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0202);
+        emulator.Bus.Read(new Unassigned16Bits(effectiveAddr)).Value.Should().Be(memoryValue, "Memory at effective zero-page address must remain unmodified");
     }
 
     [Theory]
@@ -222,41 +227,43 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(0x42);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(0x42);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         // Populate memory at 16-bit target address
-        cpu.GetMemory()[address] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(address), new Unassigned8Bits(memoryValue));
 
         Status initialFlags = Status.Interrupt;
         if (initialCarry)
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x6D, address);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x6D));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits((byte)(address & 0xFF)));
+        emulator.Bus.Write(new Unassigned16Bits(0x0202), new Unassigned8Bits((byte)(address >> 8)));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(0x42);
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[address].Should().Be(memoryValue, "Memory at target address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(0x42);
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0203);
+        emulator.Bus.Read(new Unassigned16Bits(address)).Value.Should().Be(memoryValue, "Memory at target address must remain unmodified");
     }
 
     [Theory]
@@ -284,20 +291,20 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(xRegister);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(xRegister);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         ushort effectiveAddr = (ushort)(baseAddress + xRegister);
 
         // Populate memory at effective target address and poison baseAddress if indexed
-        cpu.GetMemory()[effectiveAddr] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(effectiveAddr), new Unassigned8Bits(memoryValue));
         if (effectiveAddr != baseAddress)
         {
-            cpu.GetMemory()[baseAddress] = 0xDD; // Poison value if emulator reads unindexed base address
+            emulator.Bus.Write(new Unassigned16Bits(baseAddress), new Unassigned8Bits(0xDD)); // Poison value
         }
 
         Status initialFlags = Status.Interrupt;
@@ -305,26 +312,28 @@ public class AdcOpcodeTests
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x7D, baseAddress);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x7D));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits((byte)(baseAddress & 0xFF)));
+        emulator.Bus.Write(new Unassigned16Bits(0x0202), new Unassigned8Bits((byte)(baseAddress >> 8)));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[effectiveAddr].Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0203);
+        emulator.Bus.Read(new Unassigned16Bits(effectiveAddr)).Value.Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
     }
 
     [Theory]
@@ -352,20 +361,20 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(0x42);
-        cpu.SetY(yRegister);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(0x42);
+        emulator.Cpu.SetY(yRegister);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         ushort effectiveAddr = (ushort)(baseAddress + yRegister);
 
         // Populate memory at effective target address and poison baseAddress if indexed
-        cpu.GetMemory()[effectiveAddr] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(effectiveAddr), new Unassigned8Bits(memoryValue));
         if (effectiveAddr != baseAddress)
         {
-            cpu.GetMemory()[baseAddress] = 0xDD; // Poison value if emulator reads unindexed base address
+            emulator.Bus.Write(new Unassigned16Bits(baseAddress), new Unassigned8Bits(0xDD)); // Poison value
         }
 
         Status initialFlags = Status.Interrupt;
@@ -373,26 +382,28 @@ public class AdcOpcodeTests
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x79, baseAddress);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x79));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits((byte)(baseAddress & 0xFF)));
+        emulator.Bus.Write(new Unassigned16Bits(0x0202), new Unassigned8Bits((byte)(baseAddress >> 8)));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(0x42);
-        cpu.GetY().Should().Be(yRegister, "Y register must remain unmodified");
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[effectiveAddr].Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(0x42);
+        emulator.Cpu.GetY().Should().Be(yRegister, "Y register must remain unmodified");
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0203);
+        emulator.Bus.Read(new Unassigned16Bits(effectiveAddr)).Value.Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
     }
 
     [Theory]
@@ -421,61 +432,62 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(xRegister);
-        cpu.SetY(0x24);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(xRegister);
+        emulator.Cpu.SetY(0x24);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         // Calculate zero page pointer address wrapped to 8-bit range
         byte ptrAddr = (byte)(zpBase + xRegister);
 
         // Store 16-bit target address in Zero Page pointer (LSB at ptrAddr, MSB at (ptrAddr + 1) & 0xFF)
-        cpu.GetMemory()[ptrAddr] = (byte)(targetAddress & 0xFF);
-        cpu.GetMemory()[(byte)(ptrAddr + 1)] = (byte)((targetAddress >> 8) & 0xFF);
+        emulator.Bus.Write(new Unassigned16Bits(ptrAddr), new Unassigned8Bits((byte)(targetAddress & 0xFF)));
+        emulator.Bus.Write(new Unassigned16Bits((byte)(ptrAddr + 1)), new Unassigned8Bits((byte)((targetAddress >> 8) & 0xFF)));
 
         // Poison unindexed base pointer address if X > 0 and does not overwrite pointer LSB or MSB
         if (ptrAddr != zpBase && (byte)(ptrAddr + 1) != zpBase)
         {
-            cpu.GetMemory()[zpBase] = 0xDD;
+            emulator.Bus.Write(new Unassigned16Bits(zpBase), new Unassigned8Bits(0xDD));
         }
 
         // Poison Page 1 if pointer MSB lookup crosses page boundary without wrapping
         ushort unwrappedPtrMsb = (ushort)(ptrAddr + 1);
         if (unwrappedPtrMsb > 0xFF)
         {
-            cpu.GetMemory()[unwrappedPtrMsb] = 0xEE;
+            emulator.Bus.Write(new Unassigned16Bits(unwrappedPtrMsb), new Unassigned8Bits(0xEE));
         }
 
         // Store memory value at target address
-        cpu.GetMemory()[targetAddress] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(targetAddress), new Unassigned8Bits(memoryValue));
 
         Status initialFlags = Status.Interrupt;
         if (initialCarry)
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x61, zpBase);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x61));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits(zpBase));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
-        cpu.GetY().Should().Be(0x24);
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[targetAddress].Should().Be(memoryValue, "Memory at target address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(xRegister, "X register must remain unmodified");
+        emulator.Cpu.GetY().Should().Be(0x24);
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0202);
+        emulator.Bus.Read(new Unassigned16Bits(targetAddress)).Value.Should().Be(memoryValue, "Memory at target address must remain unmodified");
     }
 
     [Theory]
@@ -505,34 +517,34 @@ public class AdcOpcodeTests
         bool expectedNegative)
     {
         // Arrange
-        var cpu = new mos6502.src.Cpu();
-        cpu.SetA(initialA);
-        cpu.SetX(0x42);
-        cpu.SetY(yRegister);
-        cpu.SetSp(0x00FD);
-        cpu.SetPc(0x0200);
+        var emulator = new Emulator();
+        emulator.Cpu.SetA(initialA);
+        emulator.Cpu.SetX(0x42);
+        emulator.Cpu.SetY(yRegister);
+        emulator.Cpu.SetSp(0x00FD);
+        emulator.Cpu.SetPc(0x0200);
 
         // Store base target address in Zero Page pointer (LSB at zpAddr, MSB at (zpAddr + 1) & 0xFF)
-        cpu.GetMemory()[zpAddr] = (byte)(baseTargetAddr & 0xFF);
-        cpu.GetMemory()[(byte)(zpAddr + 1)] = (byte)((baseTargetAddr >> 8) & 0xFF);
+        emulator.Bus.Write(new Unassigned16Bits(zpAddr), new Unassigned8Bits((byte)(baseTargetAddr & 0xFF)));
+        emulator.Bus.Write(new Unassigned16Bits((byte)(zpAddr + 1)), new Unassigned8Bits((byte)((baseTargetAddr >> 8) & 0xFF)));
 
         // Poison Page 1 if pointer MSB lookup crosses page boundary without wrapping
         ushort unwrappedPtrMsb = (ushort)(zpAddr + 1);
         if (unwrappedPtrMsb > 0xFF)
         {
-            cpu.GetMemory()[unwrappedPtrMsb] = 0xEE;
+            emulator.Bus.Write(new Unassigned16Bits(unwrappedPtrMsb), new Unassigned8Bits(0xEE));
         }
 
         // Calculate effective target address (16-bit addition with Y)
         ushort effectiveAddr = (ushort)(baseTargetAddr + yRegister);
 
         // Store memory value at effective target address
-        cpu.GetMemory()[effectiveAddr] = memoryValue;
+        emulator.Bus.Write(new Unassigned16Bits(effectiveAddr), new Unassigned8Bits(memoryValue));
 
         // Poison unindexed baseTargetAddr if Y > 0 and effectiveAddr != baseTargetAddr
         if (effectiveAddr != baseTargetAddr)
         {
-            cpu.GetMemory()[baseTargetAddr] = 0xDD;
+            emulator.Bus.Write(new Unassigned16Bits(baseTargetAddr), new Unassigned8Bits(0xDD));
         }
 
         Status initialFlags = Status.Interrupt;
@@ -540,25 +552,26 @@ public class AdcOpcodeTests
         {
             initialFlags |= Status.Carry;
         }
-        cpu.SetFlags(initialFlags);
+        emulator.Cpu.SetFlags(initialFlags);
 
-        var instruction = new Instruction(0x71, zpAddr);
+        emulator.Bus.Write(new Unassigned16Bits(0x0200), new Unassigned8Bits(0x71));
+        emulator.Bus.Write(new Unassigned16Bits(0x0201), new Unassigned8Bits(zpAddr));
 
         // Act
-        cpu.Execute(instruction);
+        emulator.Step();
 
         // Assert 6502 Specification behavior
-        cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
-        cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
-        cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
-        cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
+        emulator.Cpu.GetA().Should().Be(expectedA, "Accumulator must match spec result");
+        emulator.Cpu.GetFlags().HasFlag(Status.Carry).Should().Be(expectedCarry, "Carry flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Zero).Should().Be(expectedZero, "Zero flag must match spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Overflow).Should().Be(expectedOverflow, "Overflow flag V must reflect signed overflow per 6502 spec");
+        emulator.Cpu.GetFlags().HasFlag(Status.Negative).Should().Be(expectedNegative, "Negative flag N must reflect bit 7 of result");
 
         // Assert non-targeted state remains unmodified
-        cpu.GetX().Should().Be(0x42);
-        cpu.GetY().Should().Be(yRegister, "Y register must remain unmodified");
-        cpu.GetSp().Should().Be(0x00FD);
-        cpu.GetPc().Should().Be(0x0200);
-        cpu.GetMemory()[effectiveAddr].Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
+        emulator.Cpu.GetX().Should().Be(0x42);
+        emulator.Cpu.GetY().Should().Be(yRegister, "Y register must remain unmodified");
+        emulator.Cpu.GetSp().Should().Be(0x00FD);
+        emulator.Cpu.GetPc().Should().Be(0x0202);
+        emulator.Bus.Read(new Unassigned16Bits(effectiveAddr)).Value.Should().Be(memoryValue, "Memory at effective target address must remain unmodified");
     }
 }
