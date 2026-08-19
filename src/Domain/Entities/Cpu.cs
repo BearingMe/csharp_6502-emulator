@@ -36,7 +36,7 @@ public class Cpu(Bus bus)
     Accumulator = (Unassigned8Bits)temp;
   }
 
-  private Unassigned16Bits ReadOperand(AddressingMode mode, Unassigned16Bits operand)
+  internal Unassigned16Bits ReadOperand(AddressingMode mode, Unassigned16Bits operand)
   {
     return mode switch
     {

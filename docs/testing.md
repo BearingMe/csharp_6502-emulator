@@ -13,7 +13,7 @@
 
 ## Test Pyramid & Structure
 
-- **Unit Tests (`tests/Unit/`)**: Verify individual 6502 instructions/opcodes, addressing mode calculations, cycle counts, and register/flag mutations.
+- **Domain Unit Tests (`tests/Domain.Tests/`)**: Verify individual 6502 instructions, addressing mode resolution, memory operations, and CPU register/flag mutations.
 - **Integration / Functional Tests (`tests/Functional/`)**: Execute compiled 6502 binary programs (e.g., Klaus Dormann 6502 functional test suite) to verify end-to-end CPU execution correctness.
 - **E2E / CLI Tests (`tests/E2E/`)**: Verify CLI execution, binary file/ROM loading, and application entry points.
 
@@ -22,29 +22,41 @@
 ## Unit Testing Conventions
 
 ### Test Methods & Structure
-- **File Naming & Location**: Unit test files mirror domain classes under `tests/` (e.g., `tests/Cpu/AdcOpcodeTests.cs`).
+- **File Naming & Location**: Unit test files reside under `tests/Domain.Tests/` (e.g., `AddresingModeTests.cs`, `InstructionTests.cs`, `MemoryTests.cs`, `RegistersTests.cs`).
 - **Naming Pattern**: `[MethodOrOpcode]_[Scenario]_[ExpectedResult]`
-  - Example: `ADC_ImmediateMode_SetsZeroFlagWhenResultIsZero`
-- **Triple-A Pattern**: Explicitly demarcate `// Arrange`, `// Act`, `// Assert` blocks.
+  - Example: `ADC_ProducesExpectedResultAndFlags` or `Immediate_ReturnsOperand`
+- **Triple-A Pattern**: Explicitly demarcate `// Arrange`, `// Act`, `// Assert` blocks when applicable.
 - **Single Behavior per Test**: Assert targeted register/flag changes while verifying non-targeted state remains strictly unmodified.
 
 ### Data-Driven Testing
-- **Addressing Modes & Branch Scenarios**: Every instruction must have exactly 1 unit test function for each addressing mode, utilizing `[Theory]` with `[InlineData]` for parameterizing values/branches.
+- **Addressing Modes & Branch Scenarios**: Every instruction must have unit test coverage for each addressing mode, utilizing `[Theory]` with `[InlineData]` for parameterizing values/branches.
 
 ```csharp
 [Theory]
-[InlineData(0x00, true)]
-[InlineData(0x01, false)]
-public void LDA_Immediate_UpdatesZeroFlag(byte value, bool expectedZero)
+[InlineData(0x10, 0x20, 0x30, false, false, false, false)]
+[InlineData(0xFF, 0x01, 0x00, true, true, false, false)]
+public void ADC_ProducesExpectedResultAndFlags(
+    byte accumulator,
+    byte operand,
+    byte expectedResult,
+    bool expectedCarry,
+    bool expectedZero,
+    bool expectedOverflow,
+    bool expectedNegative)
 {
     // Arrange
-    var cpu = CreateCpu();
+    cpu.Accumulator = accumulator;
+    cpu.Flags = Status.Interrupt;
 
     // Act
-    cpu.ExecuteLdaImmediate(value);
+    cpu.ADC(AddressingMode.Immediate, operand);
 
     // Assert
-    cpu.Flags.HasFlag(Status.Zero).Should().Be(expectedZero);
+    Assert.Equal(expectedResult, cpu.Accumulator.Value);
+    Assert.Equal(expectedCarry, cpu.Flags.HasFlag(Status.Carry));
+    Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
+    Assert.Equal(expectedOverflow, cpu.Flags.HasFlag(Status.Overflow));
+    Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));
 }
 ```
 

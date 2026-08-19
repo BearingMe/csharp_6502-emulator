@@ -19,6 +19,15 @@ src/
         ├── Instruction.cs      # Instruction value object (Opcode, Operand)
         ├── Unassigned8Bits.cs  # Fixed-width 8-bit value type wrapper with arithmetic/bitwise operators
         └── Unassigned16Bits.cs # Fixed-width 16-bit address value type wrapper
+
+tests/
+└── Domain.Tests/
+    ├── AddresingModeTests.cs   # Unit tests for 6502 addressing mode operand resolution
+    ├── CpuExtensions.cs        # Internal test helpers for CPU test routines
+    ├── InstructionTests.cs     # Unit tests for CPU instructions and flag calculations
+    ├── MemoryTests.cs          # Unit tests for Bus 64 KiB memory read/write operations
+    ├── RegistersTests.cs       # Unit tests for CPU registers & status flag state transitions
+    └── Domain.Tests.csproj     # Test project definition (.NET 9, xUnit, FluentAssertions)
 ```
 
 ### Future / Planned Expansions (as implementation scales)
@@ -38,6 +47,10 @@ src/
    - **`Bus`**: Pure memory storage and address indexing with zero dependency on CPU instruction logic or application workflow.
    - **Value Objects / Enums**: Immutable record structs (`Unassigned8Bits`, `Unassigned16Bits`, `Instruction`) providing type-safe fixed-width numeric boundaries.
    - Domain layer has **zero external third-party dependencies** and zero awareness of CLI/Application hosting.
+
+3. **Test Suite (`Domain.Tests`)**:
+   - Mirrors domain types and directly tests addressing modes, CPU arithmetic/flags, memory read/write, and register behaviors.
+   - Depends on `mos6502` project and xUnit / FluentAssertions testing frameworks.
 
 ## Data Flow (Fetch-Decode-Execute)
 
