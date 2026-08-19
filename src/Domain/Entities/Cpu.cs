@@ -47,8 +47,20 @@ public class Cpu(Bus bus)
     Accumulator = (Unassigned8Bits)temp;
   }
 
+  public void ASL(AddressingMode mode, Unassigned16Bits operand)
+  {
+    var data = ReadOperand(mode, operand);
+    var temp = data << 1;
 
+    SetFlag(Status.Carry, ToBool(data & 0b1000_0000));
+    SetFlag(Status.Zero, (temp & 0xFF) == 0);
+    SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
 
+    if (mode == AddressingMode.Accumulator)
+      Accumulator = (Unassigned8Bits)(temp & 0xFF);
+    else
+      Bus.Write(operand, (Unassigned8Bits)(temp & 0xFF));
+  }
 
   internal Unassigned16Bits ReadOperand(AddressingMode mode, Unassigned16Bits operand)
   {
