@@ -43,4 +43,32 @@ public class InstructionTests
     Assert.Equal(expectedOverflow, cpu.Flags.HasFlag(Status.Overflow));
     Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));
   }
+
+  [Theory]
+  [InlineData(0xFF, 0x0F, 0x0F, false, false)]
+  [InlineData(0xF0, 0x0F, 0x00, true, false)]
+  [InlineData(0x80, 0xFF, 0x80, false, true)]
+  [InlineData(0x7F, 0x80, 0x00, true, false)]
+  [InlineData(0xAA, 0x55, 0x00, true, false)]
+  [InlineData(0xFE, 0x81, 0x80, false, true)]
+  [InlineData(0x00, 0x00, 0x00, true, false)]
+  public void AND_ProducesExpectedResultAndFlags(
+      byte accumulator,
+      byte operand,
+      byte expectedResult,
+      bool expectedZero,
+      bool expectedNegative)
+  {
+    cpu.Accumulator = accumulator;
+    cpu.Flags = Status.Interrupt;
+
+    cpu.AND(
+        AddressingMode.Immediate,
+        operand
+    );
+
+    Assert.Equal(expectedResult, cpu.Accumulator.Value);
+    Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
+    Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));
+  }
 }

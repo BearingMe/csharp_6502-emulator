@@ -36,6 +36,20 @@ public class Cpu(Bus bus)
     Accumulator = (Unassigned8Bits)temp;
   }
 
+  public void AND(AddressingMode mode, Unassigned16Bits operand)
+  {
+    var data = ReadOperand(mode, operand);
+    var temp = Accumulator & data;
+
+    SetFlag(Status.Zero, temp == 0);
+    SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
+
+    Accumulator = (Unassigned8Bits)temp;
+  }
+
+
+
+
   internal Unassigned16Bits ReadOperand(AddressingMode mode, Unassigned16Bits operand)
   {
     return mode switch
