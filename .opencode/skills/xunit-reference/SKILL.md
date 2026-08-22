@@ -1,508 +1,494 @@
 ---
 name: xunit-reference
-description: Comprehensive reference for xUnit testing framework in .NET. Covers project setup, test attributes ([Fact], [Theory]), data-driven testing ([InlineData], [MemberData], [ClassData], TheoryData<T>), assertions, fixtures (Class, Collection, Assembly, IAsyncLifetime), parallelism, diagnostic output, traits, and dynamic skipping. Use whenever writing, reading, or refactoring xUnit tests in .NET.
+description: Minimal xUnit reference focused on short, precise, human-readable tests. Prefer direct tests with minimal setup, minimal indirection, and no unnecessary test abstractions.
 ---
 
-# xUnit Framework Reference
+# xUnit Testing Reference
 
-A project-agnostic, condensed reference for xUnit testing in .NET.
+## Core Rule
 
----
+Tests are documentation.
 
-## 1. Project Setup & Package Dependencies
+A good test should be:
 
-```bash
-# Create test project
-dotnet new xunit -o ./tests/MyApp.Tests -n MyApp.Tests
+- Short
+- Precise
+- Direct
+- Easy to understand without navigating elsewhere
+- Focused on one behavior
 
-# Essential packages
-dotnet add package xunit
-dotnet add package xunit.runner.visualstudio
-dotnet add package Microsoft.NET.Test.Sdk
+Prefer repetition over indirection when repetition makes tests easier to read.
 
-# Optional utility packages
-dotnet add package coverlet.collector   # Code coverage
-```
+Do not create helpers, fixtures, base classes, data classes, or abstractions merely to reduce line count.
 
-Recommended project settings (`.csproj`):
-```xml
-<PropertyGroup>
-  <TargetFramework>net9.0</TargetFramework>
-  <ImplicitUsings>enable</ImplicitUsings>
-  <Nullable>enable</Nullable>
-  <IsPackable>false</IsPackable>
-</PropertyGroup>
-```
-
----
-
-## 2. Defining Tests
-
-### `[Fact]` — Single Unparameterized Test
+The test should make the behavior obvious:
 
 ```csharp
-using Xunit;
-
-public class CalculatorTests
+[Fact]
+public void Add_TwoNumbers_ReturnsSum()
 {
-    [Fact]
-    public void Add_TwoPositiveNumbers_ReturnsSum()
-    {
-        var result = 1 + 2;
-        Assert.Equal(3, result);
-    }
+    var result = calculator.Add(2, 3);
 
-    [Fact(Skip = "Reason for skipping")]
-    public void SkippedTest() { }
-
-    [Fact(DisplayName = "Custom test display name in runner")]
-    public void CustomDisplayNameTest() { }
+    Assert.Equal(5, result);
 }
 ```
 
-### `[Theory]` — Parameterized Test
+Prefer this over hiding the setup or assertion behind helpers.
+
+---
+
+## 1. `[Fact]`
+
+Use `[Fact]` when the test has one meaningful set of inputs.
 
 ```csharp
-public class MathTests
+[Fact]
+public void Add_TwoNumbers_ReturnsSum()
 {
-    [Theory]
-    [InlineData(1, 2, 3)]
-    [InlineData(5, 4, 9)]
-    [InlineData(-1, 1, 0)]
-    public void Add_MultipleInputs_ReturnsExpected(int a, int b, int expected)
-    {
-        Assert.Equal(expected, a + b);
-    }
+    Assert.Equal(5, calculator.Add(2, 3));
 }
+```
+
+Skip only when there is a clear reason:
+
+```csharp
+[Fact(Skip = "Requires Windows")]
+public void UsesWindowsRegistry() { }
 ```
 
 ---
 
-## 3. Data-Driven Test Sources
+## 2. `[Theory]`
 
-### `InlineData` — Constant literal values
+Use `[Theory]` when several inputs test the **same behavior**.
 
 ```csharp
 [Theory]
-[InlineData("hello", 5)]
-[InlineData("", 0)]
-public void StringLength(string input, int expectedLength)
+[InlineData(1, 2, 3)]
+[InlineData(5, 4, 9)]
+[InlineData(-1, 1, 0)]
+public void Add_ReturnsExpectedResult(int a, int b, int expected)
 {
-    Assert.Equal(expectedLength, input.Length);
+    Assert.Equal(expected, calculator.Add(a, b));
 }
 ```
 
-### `MemberData` — Static property or method
+Do not use `[Theory]` merely because inputs differ.
+
+If the cases communicate different behavior, use separate `[Fact]` tests.
+
+Prefer:
 
 ```csharp
-public class DataDrivenTests
+[Fact]
+public void Add_Zero_ReturnsOtherNumber()
 {
-    // Strongly typed TheoryData<T...> (PREFERRED over raw object[] arrays)
-    public static TheoryData<int, int, int> AdditionData => new()
-    {
-        { 18, 24, 42 },
-        { 6, 7, 13 },
-    };
+    Assert.Equal(5, calculator.Add(5, 0));
+}
 
-    [Theory]
-    [MemberData(nameof(AdditionData))]
-    public void Add_WithTheoryData(int a, int b, int expected)
-    {
-        Assert.Equal(expected, a + b);
-    }
-
-    // Classic IEnumerable<object[]> pattern
-    public static IEnumerable<object[]> RawData()
-    {
-        yield return new object[] { 10, 20, 30 };
-        yield return new object[] { 1, 1, 2 };
-    }
-
-    [Theory]
-    [MemberData(nameof(RawData))]
-    public void Add_WithRawData(int a, int b, int expected)
-    {
-        Assert.Equal(expected, a + b);
-    }
+[Fact]
+public void Add_NegativeNumber_ReturnsDifference()
+{
+    Assert.Equal(2, calculator.Add(5, -3));
 }
 ```
 
-### `ClassData` — Separate data class
-
-```csharp
-public class CustomTestData : IEnumerable<object[]>
-{
-    public IEnumerator<object[]> GetEnumerator()
-    {
-        yield return new object[] { 10, true };
-        yield return new object[] { -5, false };
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-}
-
-[Theory]
-[ClassData(typeof(CustomTestData))]
-public void IsPositive_ValidatesNumber(int input, bool expected)
-{
-    Assert.Equal(expected, input > 0);
-}
-```
+over one large theory containing unrelated cases.
 
 ---
 
-## 4. Assertions (`Assert` API)
+## 3. Test Data
 
-### Equality & Identity
+Prefer the simplest data source possible.
+
+### `InlineData`
+
+Default choice for small, readable values.
+
 ```csharp
-Assert.Equal(expected, actual);            // Value equality
+[Theory]
+[InlineData(0, false)]
+[InlineData(1, true)]
+[InlineData(-1, false)]
+public void IsPositive_ReturnsExpected(int value, bool expected)
+{
+    Assert.Equal(expected, IsPositive(value));
+}
+```
+
+### `MemberData`
+
+Use only when `InlineData` cannot represent the data cleanly.
+
+```csharp
+public static TheoryData<byte, bool> Values => new()
+{
+    { 0x00, false },
+    { 0x80, true }
+};
+
+[Theory]
+[MemberData(nameof(Values))]
+public void IsNegative_ReturnsExpected(byte value, bool expected)
+{
+    Assert.Equal(expected, IsNegative(value));
+}
+```
+
+Prefer `TheoryData<T...>` over `IEnumerable<object[]>`.
+
+### `ClassData`
+
+Avoid unless the data is genuinely large or reusable.
+
+Do not create a separate data class just to avoid a few `[InlineData]` lines.
+
+---
+
+## 4. Assertions
+
+Expected value always comes first:
+
+```csharp
+Assert.Equal(expected, actual);
+```
+
+Never use `Assert.Equals()`.
+
+### Common assertions
+
+```csharp
+Assert.Equal(expected, actual);
 Assert.NotEqual(expected, actual);
-Assert.StrictEqual(expected, actual);      // Strict type & value match
-Assert.Same(expectedReference, actual);    // Reference equality (object.ReferenceEquals)
-Assert.NotSame(expectedReference, actual);
-```
 
-> **CRITICAL RULE**: ALWAYS use `Assert.Equal(expected, actual)`. NEVER use `Assert.Equals()` (which calls `object.Equals()` and always throws or fails statically). The expected value must ALWAYS be the first argument.
-
-### Booleans & Nullability
-```csharp
 Assert.True(condition);
-Assert.True(condition, "Optional user message on failure");
 Assert.False(condition);
-Assert.Null(objectInstance);
-Assert.NotNull(objectInstance);
-```
 
-### Type Assertions
-```csharp
-T instance = Assert.IsType<T>(objectInstance);        // Exact type match
-T derived  = Assert.IsAssignableFrom<T>(objectInstance); // Type or subtype match
-```
+Assert.Null(value);
+Assert.NotNull(value);
 
-### Strings
-```csharp
-Assert.Equal("expected", str, ignoreCase: false);
-Assert.StartsWith("prefix", str);
-Assert.EndsWith("suffix", str);
-Assert.Contains("sub", str);
-Assert.DoesNotContain("sub", str);
-Assert.Matches(@"^\d{3}-\d{2}-\d{4}$", str);          // Regex match
-Assert.DoesNotMatch(@"\s+", str);
-Assert.Empty(str);
-Assert.NotEmpty(str);
-```
+Assert.Same(expected, actual);
+Assert.NotSame(expected, actual);
 
-### Collections
-```csharp
 Assert.Empty(collection);
 Assert.NotEmpty(collection);
-Assert.Single(collection);                           // Asserts exactly 1 element
-Assert.Single(collection, item => item.Id == 1);     // Asserts exactly 1 element matching predicate
+Assert.Single(collection);
+
 Assert.Contains(item, collection);
 Assert.DoesNotContain(item, collection);
-Assert.Equal(expectedList, actualList);              // Element-wise equality & order match
-Assert.Equivalent(expectedSet, actualSet);           // Element equality ignoring order
 
-// Test every element meets a predicate
-Assert.All(collection, item => Assert.NotNull(item));
-
-// Element-by-element structural assertions
-Assert.Collection(collection,
-    element0 => Assert.Equal("first", element0),
-    element1 => Assert.Equal("second", element1)
-);
-
-Assert.InRange(value, lowInclusive, highInclusive);
-Assert.NotInRange(value, lowInclusive, highInclusive);
+Assert.InRange(value, min, max);
+Assert.NotInRange(value, min, max);
 ```
 
 ### Exceptions
-```csharp
-// Synchronous exception assertion (returns exception for further checks)
-var ex = Assert.Throws<ArgumentNullException>(() => MethodThatThrows(null));
-Assert.Equal("paramName", ex.ParamName);
 
-// Async exception assertion
-var asyncEx = await Assert.ThrowsAsync<InvalidOperationException>(
-    async () => await AsyncMethodThatThrows()
-);
+```csharp
+var exception = Assert.Throws<ArgumentNullException>(
+    () => Method(null));
+
+Assert.Equal("value", exception.ParamName);
 ```
 
-### Events & Property Notifications
-```csharp
-// Assert event raised
-Assert.Raises<CustomEventArgs>(
-    handler => publisher.CustomEvent += handler,
-    handler => publisher.CustomEvent -= handler,
-    () => publisher.DoSomething()
-);
+For asynchronous code:
 
-// Assert INotifyPropertyChanged
-Assert.PropertyChanged(notifierObj, nameof(notifierObj.Property), () => {
-    notifierObj.Property = "NewValue";
-});
+```csharp
+await Assert.ThrowsAsync<InvalidOperationException>(
+    () => MethodAsync());
 ```
 
 ---
 
-## 5. Shared Context & Fixtures Lifecycle
+## 5. Keep Setup Local
 
-xUnit intentionally omits `[SetUp]` / `[TearDown]` attributes. It uses standard C# lifecycle mechanisms.
-
-### Per-Test Lifecycle (Constructor + `IDisposable` / `IAsyncLifetime`)
-
-A **new instance** of the test class is created for **every test method execution**.
+Prefer setup directly inside the test.
 
 ```csharp
-public class PerTestLifecycleTests : IDisposable, IAsyncLifetime
+[Fact]
+public void Store_Value_CanBeRetrieved()
 {
-    public PerTestLifecycleTests()
-    {
-        // 1. Synchronous setup runs before EVERY test
-    }
+    var store = new Store();
 
-    public async Task InitializeAsync()
-    {
-        // 2. Async setup runs before EVERY test
-        await Task.Yield();
-    }
+    store.Set("name", "Bruno");
 
-    [Fact]
-    public void TestOne() { }
-
-    public async Task DisposeAsync()
-    {
-        // 3. Async teardown runs after EVERY test
-        await Task.Yield();
-    }
-
-    public void Dispose()
-    {
-        // 4. Synchronous teardown runs after EVERY test
-    }
+    Assert.Equal("Bruno", store.Get("name"));
 }
 ```
 
-### Class Fixture — Shared across single test class
-
-Resource is instantiated **once** before any test in the class runs, and cleaned up after all tests finish.
+Avoid moving simple setup into helpers:
 
 ```csharp
-public class SharedResourceFixture : IDisposable, IAsyncLifetime
+var store = CreateInitializedStore();
+Assert.Equal("Bruno", store.Get("name"));
+```
+
+The second version forces the reader to navigate elsewhere to understand the test.
+
+Use helpers only when they remove substantial, repeated noise without hiding the behavior being tested.
+
+---
+
+## 6. Keep Tests Independent
+
+Each test should establish the state it needs.
+
+Avoid:
+
+- Shared mutable state
+- Test ordering
+- Global setup
+- Static test state
+- Tests depending on other tests
+
+A test should be understandable and runnable by itself.
+
+---
+
+## 7. Fixtures
+
+Fixtures are for **expensive shared resources**, not ordinary setup.
+
+Good uses:
+
+- Database
+- Docker container
+- External service
+- Large immutable test environment
+
+Bad use:
+
+```csharp
+public class CalculatorFixture
 {
-    public string ConnectionString { get; private set; } = "";
-
-    public async Task InitializeAsync()
-    {
-        ConnectionString = "Initialized";
-        await Task.Delay(10);
-    }
-
-    public Task DisposeAsync() => Task.CompletedTask;
-    public void Dispose() { }
-}
-
-public class ClassFixtureTests : IClassFixture<SharedResourceFixture>
-{
-    private readonly SharedResourceFixture _fixture;
-
-    public ClassFixtureTests(SharedResourceFixture fixture)
-    {
-        _fixture = fixture; // Injected by xUnit
-    }
-
-    [Fact]
-    public void TestUsingFixture()
-    {
-        Assert.Equal("Initialized", _fixture.ConnectionString);
-    }
+    public Calculator Calculator { get; } = new();
 }
 ```
 
-### Collection Fixture — Shared across multiple test classes
+Just create the calculator in the test.
 
-Share state across distinct test classes without re-initializing expensive setup.
+### Class fixture
 
 ```csharp
-// Step 1: Create fixture class
 public class DatabaseFixture : IDisposable
 {
-    public DatabaseFixture() { /* Expensive DB spin up */ }
-    public void Dispose() { /* Clean up */ }
+    public Database Database { get; } = CreateDatabase();
+
+    public void Dispose() => Database.Dispose();
 }
 
-// Step 2: Define collection definition (marker class)
-[CollectionDefinition("Database collection")]
-public class DatabaseCollection : ICollectionFixture<DatabaseFixture>
+public class UserTests : IClassFixture<DatabaseFixture>
 {
-    // Interface & attribute applied here; no code needed in body
-}
+    private readonly DatabaseFixture fixture;
 
-// Step 3: Decorate test classes to join the collection
-[Collection("Database collection")]
-public class UserTests
-{
-    private readonly DatabaseFixture _fixture;
-    public UserTests(DatabaseFixture fixture) => _fixture = fixture;
-}
+    public UserTests(DatabaseFixture fixture)
+    {
+        this.fixture = fixture;
+    }
 
-[Collection("Database collection")]
-public class ProductTests
-{
-    private readonly DatabaseFixture _fixture;
-    public ProductTests(DatabaseFixture fixture) => _fixture = fixture;
+    [Fact]
+    public void CreateUser_PersistsUser()
+    {
+        // ...
+    }
 }
 ```
 
-### Assembly Fixture — Shared globally across the entire test assembly
-
-```csharp
-[assembly: AssemblyFixture(typeof(GlobalTestEnvironmentFixture))]
-
-public class GlobalTestEnvironmentFixture : IDisposable
-{
-    public GlobalTestEnvironmentFixture() { /* Global setup */ }
-    public void Dispose() { /* Global teardown */ }
-}
-
-// Inject in any test class in the assembly:
-public class AnyTestClass
-{
-    public AnyTestClass(GlobalTestEnvironmentFixture globalFixture) { }
-}
-```
-
-### Summary of Lifecycles
-
-| Scope | Mechanism | Instantiated | Use Case |
-|---|---|---|---|
-| Per Test | Constructor / `IDisposable` / `IAsyncLifetime` | N times (1 per test) | Isolated state, per-test mocks |
-| Per Class | `IClassFixture<T>` | 1 per class | Expensive setup shared within class |
-| Per Collection | `ICollectionFixture<T>` + `[Collection]` | 1 per collection | DB / Docker container shared across classes |
-| Per Assembly | `[assembly: AssemblyFixture(typeof(T))]` | 1 per assembly run | Global environment setup |
+Do not introduce fixtures to make test files shorter.
 
 ---
 
-## 6. Parallel Execution Control
+## 8. Test Class Organization
 
-- By default, xUnit runs **test classes in parallel** (each class is placed in its own default test collection).
-- Tests **within the same class** run sequentially.
-- Test classes assigned to the **same `[Collection("name")]`** run sequentially relative to each other.
+Group tests by the behavior they describe.
 
-To disable parallel execution assembly-wide, create an `AssemblyInfo.cs` or set attribute:
+For a 6502 instruction:
+
 ```csharp
-using Xunit;
+public class AdcTests
+{
+    [Fact]
+    public void AddsAccumulatorAndOperand()
+    {
+        // ...
+    }
 
+    [Fact]
+    public void SetsCarryWhenResultOverflowsByte()
+    {
+        // ...
+    }
+
+    [Fact]
+    public void SetsZeroWhenResultIsZero()
+    {
+        // ...
+    }
+}
+```
+
+Prefer one cohesive test class over many tiny files.
+
+A 500-line test file is not automatically a problem.
+
+A 20-line test that requires opening five other files to understand it is.
+
+Split a test class when it contains genuinely different concepts, not merely because the file became long.
+
+---
+
+## 9. Test Naming
+
+Names should describe behavior.
+
+Prefer:
+
+```csharp
+Lda_Immediate_LoadsAccumulator
+Adc_WithCarry_SetsCarryFlag
+Jmp_Absolute_SetsProgramCounter
+```
+
+Avoid:
+
+```csharp
+TestLda()
+ShouldWork()
+TestCase1()
+Execute()
+```
+
+The name should help a failure explain itself.
+
+---
+
+## 10. 6502 Tests
+
+6502 tests should make CPU state changes explicit.
+
+Prefer:
+
+```csharp
+[Fact]
+public void Lda_Immediate_LoadsAccumulator()
+{
+    cpu.Load(0xA9, 0x42);
+
+    cpu.Step();
+
+    Assert.Equal(0x42, cpu.A);
+}
+```
+
+For flags:
+
+```csharp
+[Fact]
+public void Lda_Zero_SetsZeroFlag()
+{
+    cpu.Load(0xA9, 0x00);
+
+    cpu.Step();
+
+    Assert.True(cpu.Status.HasFlag(Status.Zero));
+}
+```
+
+When several flag combinations are the same behavior, use a theory:
+
+```csharp
+[Theory]
+[InlineData(0x00, true)]
+[InlineData(0x01, false)]
+[InlineData(0x80, false)]
+public void Lda_SetsZeroFlagCorrectly(byte value, bool zero)
+{
+    cpu.Load(0xA9, value);
+
+    cpu.Step();
+
+    Assert.Equal(zero, cpu.Status.HasFlag(Status.Zero));
+}
+```
+
+Do not create a test framework inside the test framework.
+
+Avoid elaborate builders, fixture hierarchies, generic test helpers, or shared setup unless the 6502 tests demonstrate a real need for them.
+
+---
+
+## 11. Parallelism
+
+Tests should normally remain parallel-safe.
+
+If tests require shared mutable resources, use xUnit collections or disable parallelization deliberately.
+
+```csharp
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 ```
 
-Or configure max parallel threads:
-```csharp
-[assembly: CollectionBehavior(MaxParallelThreads = 4)]
-```
+Do not disable parallelism simply because tests are easier to write that way.
 
 ---
 
-## 7. Diagnostic Output (`ITestOutputHelper`)
+## 12. Output
 
-Standard `Console.WriteLine` output is captured and hidden by xUnit runner. Use `ITestOutputHelper` via constructor injection to write output linked to test results.
+Use `ITestOutputHelper` when diagnostic output is actually useful.
 
 ```csharp
-using Xunit;
-using Xunit.Abstractions;
-
-public class OutputTests
+public class Tests
 {
-    private readonly ITestOutputHelper _output;
+    private readonly ITestOutputHelper output;
 
-    public OutputTests(ITestOutputHelper output)
+    public Tests(ITestOutputHelper output)
     {
-        _output = output;
+        this.output = output;
     }
 
     [Fact]
-    public void TestWithLogging()
+    public void Test()
     {
-        _output.WriteLine("Step 1: Initializing value");
-        var val = 42;
-        _output.WriteLine("Step 2: Value is {0}", val);
-        Assert.Equal(42, val);
+        output.WriteLine("Debug information");
     }
 }
 ```
 
+Do not litter tests with logging.
+
 ---
 
-## 8. Traits & Filtering
+## 13. Traits
 
-Use `[Trait("Category", "Value")]` to tag tests for command-line filtering.
+Use traits only when they provide useful filtering.
 
 ```csharp
-public class CategorizedTests
+[Fact]
+[Trait("Category", "Integration")]
+public void DatabaseConnection_Works()
 {
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void FastUnitTest() { }
-
-    [Fact]
-    [Trait("Category", "Integration")]
-    [Trait("Priority", "High")]
-    public void IntegrationTest() { }
+    // ...
 }
 ```
 
-Filter execution via CLI:
+Filter with:
+
 ```bash
-dotnet test --filter "Category=Unit"
-dotnet test --filter "Category=Integration&Priority=High"
-dotnet test --filter "Category!=Integration"
+dotnet test --filter "Category=Integration"
 ```
 
 ---
 
-## 9. Dynamic Skipping (Custom Attributes)
+## Rules of Thumb
 
-Extend `FactAttribute` or `TheoryAttribute` to conditionally skip tests at runtime based on environment.
-
-```csharp
-public sealed class WindowsOnlyFactAttribute : FactAttribute
-{
-    public WindowsOnlyFactAttribute()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Skip = "Test runnable only on Windows platform.";
-        }
-    }
-}
-
-public class PlatformDependentTests
-{
-    [WindowsOnlyFact]
-    public void RegistryTest() { }
-}
-```
-
----
-
-## 10. Test Runner Configuration (`xunit.runner.json`)
-
-Add an `xunit.runner.json` file at the root of the test project to configure execution:
-
-```json
-{
-  "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
-  "parallelizeAssembly": true,
-  "parallelizeTestCollections": true,
-  "maxParallelThreads": 0,
-  "methodDisplay": "method",
-  "methodDisplayOptions": "replaceUnderscoreWithSpace,useOperatorMonikers"
-}
-```
-
-Ensure file is copied to output directory in `.csproj`:
-```xml
-<ItemGroup>
-  <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-</ItemGroup>
-```
+1. **Prefer `[Fact]` over abstractions.**
+2. **Use `[Theory]` for genuinely equivalent cases.**
+3. **Prefer `InlineData` for small datasets.**
+4. **Keep setup inside the test.**
+5. **Keep assertions directly visible.**
+6. **Repeat a few lines rather than hiding them behind helpers.**
+7. **Use fixtures only for expensive shared resources.**
+8. **Do not mirror production folders just to organize tests.**
+9. **Keep related tests together.**
+10. **Optimize for the reader, not the line count.**
+11. **A test should explain the behavior without requiring a debugger.**
+12. **Do not build abstractions until repeated test code demonstrates that one is needed.**
+13. **If removing an abstraction makes the test easier to understand, remove it.**
