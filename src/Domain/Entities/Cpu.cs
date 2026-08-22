@@ -1,29 +1,25 @@
 using System.Numerics;
 using mos6502.src.Domain.Enums;
-using mos6502.src.Domain.Objects;
 
 namespace mos6502.src.Domain.Entities;
 
-using Status = mos6502.src.Domain.Enums.Status;
-
 public class Cpu(Bus bus)
 {
-
   public Bus Bus { get; } = bus;
 
-  public Unassigned16Bits ProgramCounter { get; set; } = new(0xFFFC);
-  public Unassigned16Bits StackPointer { get; set; } = new(0x00FD);
-  public Unassigned8Bits Accumulator { get; set; } = new(0x00);
-  public Unassigned8Bits XRegister { get; set; } = new(0x00);
-  public Unassigned8Bits YRegister { get; set; } = new(0x00);
+  public u16 ProgramCounter { get; set; } = 0xFFFC;
+  public u16 StackPointer { get; set; } = 0x00FD;
+  public u8 Accumulator { get; set; } = 0x00;
+  public u8 XRegister { get; set; } = 0x00;
+  public u8 YRegister { get; set; } = 0x00;
   public Status Flags { get; set; } = Status.Interrupt;
 
   public void AdvancePC(int bytes)
   {
-    ProgramCounter = (Unassigned16Bits)(ProgramCounter + bytes);
+    ProgramCounter = (u16)(ProgramCounter + bytes);
   }
 
-  public void ADC(AddressingMode mode, Unassigned16Bits operand)
+  public void ADC(AddressingMode mode, u16 operand)
   {
     var data = ReadOperand(mode, operand);
     var temp = Accumulator + data + (IsFlag(Status.Carry) ? 1 : 0);
@@ -33,10 +29,10 @@ public class Cpu(Bus bus)
     SetFlag(Status.Overflow, ToBool((temp ^ Accumulator) & (temp ^ data) & 0b1000_0000));
     SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
 
-    Accumulator = (Unassigned8Bits)temp;
+    Accumulator = (u8)temp;
   }
 
-  public void AND(AddressingMode mode, Unassigned16Bits operand)
+  public void AND(AddressingMode mode, u16 operand)
   {
     var data = ReadOperand(mode, operand);
     var temp = Accumulator & data;
@@ -44,10 +40,10 @@ public class Cpu(Bus bus)
     SetFlag(Status.Zero, temp == 0);
     SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
 
-    Accumulator = (Unassigned8Bits)temp;
+    Accumulator = (u8)temp;
   }
 
-  public void ASL(AddressingMode mode, Unassigned16Bits operand)
+  public void ASL(AddressingMode mode, u16 operand)
   {
     var data = ReadOperand(mode, operand);
     var temp = data << 1;
@@ -57,26 +53,26 @@ public class Cpu(Bus bus)
     SetFlag(Status.Negative, ToBool(temp & 0b1000_0000));
 
     if (mode == AddressingMode.Accumulator)
-      Accumulator = (Unassigned8Bits)(temp & 0xFF);
+      Accumulator = (u8)(temp & 0xFF);
     else
-      Bus.Write(operand, (Unassigned8Bits)(temp & 0xFF));
+      Bus.Write(operand, (u8)(temp & 0xFF));
   }
 
-  internal Unassigned16Bits ReadOperand(AddressingMode mode, Unassigned16Bits operand)
+  internal u16 ReadOperand(AddressingMode mode, u16 operand)
   {
     return mode switch
     {
       AddressingMode.Immediate => operand,
       AddressingMode.Accumulator => Accumulator,
-      AddressingMode.Relative => Bus.Read((Unassigned16Bits)(ProgramCounter + operand)),
+      AddressingMode.Relative => Bus.Read((u16)(ProgramCounter + operand)),
 
-      AddressingMode.ZeroPage => Bus.Read((Unassigned16Bits)(operand & 0xFF)),
-      AddressingMode.ZeroPageX => Bus.Read((Unassigned16Bits)((operand + XRegister) & 0xFF)),
-      AddressingMode.ZeroPageY => Bus.Read((Unassigned16Bits)((operand + YRegister) & 0xFF)),
+      AddressingMode.ZeroPage => Bus.Read((u16)(operand & 0xFF)),
+      AddressingMode.ZeroPageX => Bus.Read((u16)((operand + XRegister) & 0xFF)),
+      AddressingMode.ZeroPageY => Bus.Read((u16)((operand + YRegister) & 0xFF)),
 
       AddressingMode.Absolute => Bus.Read(operand),
-      AddressingMode.AbsoluteX => Bus.Read((Unassigned16Bits)(operand + XRegister)),
-      AddressingMode.AbsoluteY => Bus.Read((Unassigned16Bits)(operand + YRegister)),
+      AddressingMode.AbsoluteX => Bus.Read((u16)(operand + XRegister)),
+      AddressingMode.AbsoluteY => Bus.Read((u16)(operand + YRegister)),
 
       AddressingMode.IndexedIndirect => ReadIndexedIndirect(operand),
       AddressingMode.IndirectIndexed => ReadIndirectIndexed(operand),
@@ -85,20 +81,20 @@ public class Cpu(Bus bus)
     };
   }
 
-  private Unassigned16Bits ReadIndexedIndirect(Unassigned16Bits operand)
+  private u16 ReadIndexedIndirect(u16 operand)
   {
-    var pointer = (Unassigned16Bits)((operand + XRegister) & 0xFF);
+    var pointer = (u16)((operand + XRegister) & 0xFF);
     var lo = Bus.Read(pointer);
-    var hi = Bus.Read((Unassigned16Bits)((pointer + 1) & 0xFF));
-    return Bus.Read((Unassigned16Bits)(lo.Value | (hi.Value << 8)));
+    var hi = Bus.Read((u16)((pointer + 1) & 0xFF));
+    return Bus.Read((u16)(lo | (hi << 8)));
   }
 
-  private Unassigned16Bits ReadIndirectIndexed(Unassigned16Bits operand)
+  private u16 ReadIndirectIndexed(u16 operand)
   {
-    var pointer = (Unassigned16Bits)(operand & 0xFF);
+    var pointer = (u16)(operand & 0xFF);
     var lo = Bus.Read(pointer);
-    var hi = Bus.Read((Unassigned16Bits)((pointer + 1) & 0xFF));
-    return Bus.Read((Unassigned16Bits)((lo.Value | (hi.Value << 8)) + YRegister));
+    var hi = Bus.Read((u16)((pointer + 1) & 0xFF));
+    return Bus.Read((u16)((lo | (hi << 8)) + YRegister));
   }
 
   private void SetFlag(Status flag, bool active)

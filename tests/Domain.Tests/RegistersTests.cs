@@ -1,6 +1,5 @@
 using mos6502.src.Domain.Entities;
 using mos6502.src.Domain.Enums;
-using mos6502.src.Domain.Objects;
 
 namespace mos6502.Domain.Tests;
 
@@ -11,12 +10,12 @@ public class RegistersTests
   [Fact]
   public void Registers_StartWithExpectedValues()
   {
-    Assert.Equal(0xFFFC, cpu.ProgramCounter.Value);
-    Assert.Equal(0x00FD, cpu.StackPointer.Value);
+    Assert.Equal(0xFFFC, cpu.ProgramCounter);
+    Assert.Equal(0x00FD, cpu.StackPointer);
 
-    Assert.Equal(0x00, cpu.Accumulator.Value);
-    Assert.Equal(0x00, cpu.XRegister.Value);
-    Assert.Equal(0x00, cpu.YRegister.Value);
+    Assert.Equal(0x00, cpu.Accumulator);
+    Assert.Equal(0x00, cpu.XRegister);
+    Assert.Equal(0x00, cpu.YRegister);
   }
 
   [Fact]

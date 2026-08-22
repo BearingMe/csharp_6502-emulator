@@ -1,6 +1,5 @@
 using mos6502.src.Domain.Entities;
 using mos6502.src.Domain.Enums;
-using mos6502.src.Domain.Objects;
 
 namespace mos6502.Domain.Tests;
 
@@ -37,7 +36,7 @@ public class InstructionTests
         operand
     );
 
-    Assert.Equal(expectedResult, cpu.Accumulator.Value);
+    Assert.Equal(expectedResult, cpu.Accumulator);
     Assert.Equal(expectedCarry, cpu.Flags.HasFlag(Status.Carry));
     Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
     Assert.Equal(expectedOverflow, cpu.Flags.HasFlag(Status.Overflow));
@@ -67,7 +66,7 @@ public class InstructionTests
         operand
     );
 
-    Assert.Equal(expectedResult, cpu.Accumulator.Value);
+    Assert.Equal(expectedResult, cpu.Accumulator);
     Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
     Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));
   }
@@ -94,7 +93,7 @@ public class InstructionTests
         0
     );
 
-    Assert.Equal(expectedResult, cpu.Accumulator.Value);
+    Assert.Equal(expectedResult, cpu.Accumulator);
     Assert.Equal(expectedCarry, cpu.Flags.HasFlag(Status.Carry));
     Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
     Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));
@@ -120,7 +119,7 @@ public class InstructionTests
         0x1234
     );
 
-    Assert.Equal(expectedResult, bus.Read(0x1234).Value);
+    Assert.Equal(expectedResult, bus.Read(0x1234));
     Assert.Equal(expectedCarry, cpu.Flags.HasFlag(Status.Carry));
     Assert.Equal(expectedZero, cpu.Flags.HasFlag(Status.Zero));
     Assert.Equal(expectedNegative, cpu.Flags.HasFlag(Status.Negative));

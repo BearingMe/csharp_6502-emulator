@@ -1,6 +1,5 @@
 using mos6502.src.Domain.Entities;
 using mos6502.src.Domain.Enums;
-using mos6502.src.Domain.Objects;
 
 namespace mos6502.Domain.Tests;
 
@@ -19,10 +18,10 @@ public class AddressingModeTests
   {
     var result = cpu.ReadOperand(
         AddressingMode.Immediate,
-        (Unassigned16Bits)0x42
+        0x42
     );
 
-    Assert.Equal(0x42, result.Value);
+    Assert.Equal(0x42, result);
   }
 
   [Fact]
@@ -35,7 +34,7 @@ public class AddressingModeTests
         0
     );
 
-    Assert.Equal(0x42, result.Value);
+    Assert.Equal(0x42, result);
   }
 
   [Fact]
@@ -48,7 +47,7 @@ public class AddressingModeTests
         0x42
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -62,7 +61,7 @@ public class AddressingModeTests
         0xFF
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -76,7 +75,7 @@ public class AddressingModeTests
         0xFF
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -89,7 +88,7 @@ public class AddressingModeTests
         0x1234
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -103,7 +102,7 @@ public class AddressingModeTests
         0x1234
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -117,7 +116,7 @@ public class AddressingModeTests
         0x1234
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -131,7 +130,7 @@ public class AddressingModeTests
         0x10
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -148,7 +147,7 @@ public class AddressingModeTests
         0xFF
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 
   [Fact]
@@ -165,6 +164,6 @@ public class AddressingModeTests
         0x42
     );
 
-    Assert.Equal(0xAB, result.Value);
+    Assert.Equal(0xAB, result);
   }
 }
