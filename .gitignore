@@ -484,5 +484,6 @@ $RECYCLE.BIN/
 *.swp
 
 # Vitepress
-.vitepress
-/node_modules
+docs/vitepress/.vitepress/cache/
+docs/vitepress/.vitepress/dist/
+node_modules/

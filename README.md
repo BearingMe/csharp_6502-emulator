@@ -1,6 +1,10 @@
 # MOS 6502 Emulator
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub_Pages-blue.svg)](https://bearingme.github.io/csharp_6502-emulator/)
+
 A MOS 6502 microprocessor emulator written in C# targeting .NET 9 (`net9.0`).
+
+📖 **Documentation**: [https://bearingme.github.io/csharp_6502-emulator/](https://bearingme.github.io/csharp_6502-emulator/)
 
 ## AI Usage Disclaimer
 
