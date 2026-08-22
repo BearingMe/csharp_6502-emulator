@@ -144,11 +144,11 @@ Application code must not contain CPU semantics that belong to the domain.
 
 The dependency direction is:
 
-<code>
+```
 Application
     ↓
 Domain
-</code>
+```
 
 The domain must not depend on application or CLI concerns.
 
@@ -166,9 +166,9 @@ The exact decomposition may change as implementation experience reveals better b
 
 A CPU execution cycle conceptually follows:
 
-<code>
+```
 Fetch → Decode → Execute → Advance
-</code>
+```
 
 The implementation may distribute these responsibilities across different components.
 

@@ -1,62 +1,121 @@
 # AGENTS.md
 
-## Project Overview
-MOS 6502 microprocessor emulator written in C# targeting .NET 9.
+## Project
 
-## Tech Stack
-- **Language**: C# 13 / .NET 9 (`net9.0`)
-- **Build Tool / SDK**: .NET SDK (`dotnet`)
-- **Testing**: xUnit
+MOS 6502 microprocessor emulator written in C# 14 targeting .NET 10.
+
+This agent provides knowledge assistance and writes tests. It does not modify production code.
 
 ## Commands
 
 ```bash
-# Build
 dotnet build
-
-# Test
 dotnet test
-
-# Clean
 dotnet clean
 ```
 
-## Overview
-C# 6502 emulator study project. Knowledge assistance & test writing only.
+## References
 
-## Context & Detailed Guidelines
-- Architecture & Module Boundaries: See `docs/architecture.md`
-- C# 13 Coding Style & Conventions: See `docs/styleguides/csharp.md`
-- Testing Strategy & Conventions: See `docs/testing.md`
-- 6502 Hardware Specifications: See `docs/hardware-specification/index.md`
+Follow these documents when applicable:
 
-## Key Rules
-- **Fixed-width integer usage**: Always use explicit integer types (`byte`, `ushort`) for 6502 registers and 16-bit address memory pointers.
-- **Architectural boundaries**: Business/emulator domain logic must remain pure and free from console/CLI dependencies.
-- **No external dependencies**: Core emulator logic must remain standard library pure .NET 9.
-- **Spec-Correct Assertions Only**: Tests MUST ALWAYS assert hardware-correct 6502 specification behavior per `docs/hardware-specification/index.md`. NEVER write assertions matching buggy or incorrect implementation behavior in `src/`.
+- ```docs/architecture.md``` — Architecture and domain boundaries
+- ```docs/styleguides/csharp.md``` — C# coding standards and code quality
+- ```docs/testing.md``` — Testing strategy and conventions
+- ```docs/hardware-specification/index.md``` — 6502 hardware specification
 
-## Unit Tests
-- Every instruction has exactly 1 unit test function for each addressing mode using xUnit `[Theory]` with `[InlineData]` for branches.
-- Tests MUST assert true 6502 spec behavior (e.g. signed overflow flag `V` set when adding two positive values resulting in negative or two negative values resulting in positive).
-- Verify expected target changes and assert non-targeted state remains unmodified.
+When rules conflict, the hardware specification takes precedence for emulator behavior.
 
-## Regression Tests
-- Follow the local skill rules in .opencode/skills/rstest-regression-test/SKILL.md.
-- Must assert spec-correct behavior (never buggy behavior).
-- Must FAIL against current bug and PASS when fixed.
+## Core Rules
+
+### Specification Is the Source of Truth
+
+Tests must verify the actual 6502 specification.
+
+Never change a test to accommodate an incorrect implementation.
+
+If the implementation disagrees with the specification, the test must represent the specification.
+
+### Simplicity
+
+Prefer the smallest solution that clearly expresses the required behavior.
+
+Do not introduce unnecessary:
+
+- Abstractions
+- Helpers
+- Fixtures
+- Interfaces
+- Factories
+- Dependency injection
+- Indirection
+
+Prefer readable repetition over abstractions that hide important behavior.
+
+### Architecture
+
+- Keep core emulator logic independent of CLI and application concerns.
+- Keep core emulator logic dependent only on the .NET standard library.
+- Follow the boundaries defined in ```docs/architecture.md```.
+- Do not introduce architectural structures merely for organization.
+
+### Types
+
+Use fixed-width types where they represent actual 6502 values:
+
+- ```byte``` for 8-bit values
+- ```ushort``` for 16-bit addresses
+
+Use explicit conversions when crossing numeric widths or implementing wrapping arithmetic.
+
+## Tests
+
+Tests must be:
+
+- Minimal
+- Human-readable
+- Deterministic
+- Independent
+- Specification-driven
+- Focused on observable behavior
+
+Test the behavior of the 6502, not implementation details.
+
+Keep setup local and explicit.
+
+Use real lightweight domain objects. Do not mock CPU state, registers, memory, or other core emulator components.
+
+Use ```[Fact]``` by default.
+
+Use ```[Theory]``` when multiple inputs exercise the same behavior. Prefer ```[InlineData]``` for small datasets.
+
+Do not force unrelated scenarios into one theory.
+
+A test may contain multiple assertions when they collectively verify one specified behavior.
+
+Do not require one assertion per test.
+
+Tests should verify all relevant observable state affected by the behavior being tested.
 
 ## Never
-- Never edit src/.
-- Never write tests that expect buggy behavior or pass while a bug exists in `src/`.
-- Never weaken, modify, or adjust test assertions to match implementation bugs in `src/`.
-- Never weaken assertions to force a test pass.
-- Never run GUI/visual execution commands.
-- Never commit build output (`bin/`, `obj/`).
+
+- Never modify ```src/```.
+- Never write tests that expect incorrect 6502 behavior.
+- Never weaken assertions to make tests pass.
+- Never modify the specification to match the implementation.
+- Never introduce test abstractions solely to reduce line count.
+- Never test private implementation details.
+- Never run GUI or visual execution commands.
+- Never commit ```bin/``` or ```obj/```.
 
 ## Definition of Done
-Work is complete ONLY when:
-1. All code follows architectural boundaries in `docs/architecture.md` and style conventions in `docs/styleguides/csharp.md`.
-2. `dotnet build` succeeds with zero errors/warnings.
-3. `dotnet test` succeeds and all unit/integration tests pass (when domain code is spec-correct).
-4. @adversary review passes.
+
+Work is complete only when:
+
+1. Tests follow ```docs/testing.md```.
+2. Code quality and test code follow ```docs/styleguides/csharp.md```.
+3. Architecture remains consistent with ```docs/architecture.md```.
+4. Tests assert behavior defined by the 6502 specification.
+5. ```dotnet build``` succeeds with zero errors and warnings.
+6. ```dotnet test``` succeeds.
+7. Regression tests fail before the corresponding bug fix and pass afterward.
+8. ```@adversary``` review passes.
