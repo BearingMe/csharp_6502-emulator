@@ -1,27 +1,24 @@
-using mos6502.src.Domain.Objects;
-
 namespace mos6502.src.Domain.Entities;
 
 public class Bus
 {
-  public const int RamSize = 0x10000; // 64kb
-  public Unassigned8Bits[] Ram { get; set; } = new Unassigned8Bits[RamSize];
+  public u8[] Ram { get; set; } = new u8[0x10000]; // 64kb
 
-  public void Write(Unassigned16Bits address, Unassigned8Bits data)
+  public void Write(u16 address, u8 data)
   {
-    Ram[address.Value] = data;
+    Ram[address] = data;
   }
 
-  public Unassigned8Bits Read(Unassigned16Bits address)
+  public u8 Read(u16 address)
   {
-    return Ram[address.Value];
+    return Ram[address];
   }
 
-  public Unassigned16Bits Read16Bits(Unassigned16Bits address)
+  public u16 Read16Bits(u16 address)
   {
     var lo = Read(address);
-    var hi = Read((Unassigned16Bits)(address + 1));
+    var hi = Read((u16)(address + 1));
 
-    return (Unassigned16Bits)(lo.Value | hi.Value << 8);
+    return (u16)(lo | hi << 8);
   }
 }
