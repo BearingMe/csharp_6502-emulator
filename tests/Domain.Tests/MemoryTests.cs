@@ -15,24 +15,6 @@ public class MemoryTests
   }
 
   [Fact]
-  public void Read16Bits_IsLittleEndian()
-  {
-    bus.Write(0x1234, 0x34);
-    bus.Write(0x1235, 0x12);
-
-    Assert.Equal(0x1234, bus.Read16Bits(0x1234));
-  }
-
-  [Fact]
-  public void Read16Bits_WrapsAtEndOfMemory()
-  {
-    bus.Write(0xFFFF, 0x34);
-    bus.Write(0x0000, 0x12);
-
-    Assert.Equal(0x1234, bus.Read16Bits(0xFFFF));
-  }
-
-  [Fact]
   public void WriteAtEdges_PreservesValues()
   {
     bus.Write(0x0000, 0xAA);

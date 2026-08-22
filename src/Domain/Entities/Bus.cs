@@ -13,12 +13,4 @@ public class Bus
   {
     return Ram[address];
   }
-
-  public u16 Read16Bits(u16 address)
-  {
-    var lo = Read(address);
-    var hi = Read((u16)(address + 1));
-
-    return (u16)(lo | hi << 8);
-  }
 }
