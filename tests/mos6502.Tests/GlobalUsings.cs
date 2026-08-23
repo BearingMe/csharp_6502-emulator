@@ -1,7 +1,8 @@
-﻿global using u8 = byte;
+global using u8 = byte;
 global using i8 = sbyte;
 global using u16 = ushort;
 global using i16 = short;
 global using cycle = int;
-
-Console.WriteLine("MOS 6502 Emulator");
+global using FluentAssertions;
+global using Xunit;
+global using mos6502;
