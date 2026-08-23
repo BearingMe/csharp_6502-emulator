@@ -664,6 +664,93 @@ public class Emulator
     return HasPageCrossed(address, pointer) ? 6 : 5;
   }
 
+  public cycle AND_immediate(u8 operand)
+  {
+    _a = (u8)(_a & operand);
+    UpdateZNFlags(_a);
+
+    return 2;
+  }
+
+  public cycle AND_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return 3;
+  }
+
+  public cycle AND_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle AND_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle AND_absolute_x(u16 operand)
+  {
+    var address = (u16)(operand + _x);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle AND_absolute_y(u16 operand)
+  {
+    var address = (u16)(operand + _y);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle AND_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+
+    var value = _bus.ReadByte(pointer);
+
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return 6;
+  }
+
+  public cycle AND_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+
+    var pointer = CombineBytesToWord(lo, hi);
+    var address = (u16)(pointer + _y);
+
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a & value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
+
   public void Reset()
   {
     _stkp = (u8)(_stkp - 3);
