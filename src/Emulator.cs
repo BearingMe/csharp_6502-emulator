@@ -102,8 +102,8 @@ public class Emulator
 
   public cycle LDA_indexed_indirect(u8 operand)
   {
-    var lo = _bus.ReadByte((byte)(operand + _x));
-    var hi = _bus.ReadByte((byte)(operand + _x + 1));
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
     var pointer = (u16)(lo | hi << 8);
 
     var value = _bus.ReadByte(pointer);
@@ -252,6 +252,62 @@ public class Emulator
     _y = value;
 
     return HasPageCrossed(operand, temp) ? 5 : 4;
+  }
+
+  public cycle STA_zero_page(u8 operand)
+  {
+    _bus.WriteByte(operand, _a);
+    return 3;
+  }
+
+  public cycle STA_zero_page_x(u8 operand)
+  {
+    _bus.WriteByte((u8)(operand + _x), _a);
+    return 4;
+  }
+
+  public cycle STA_absolute(u16 operand)
+  {
+    _bus.WriteByte(operand, _a);
+    return 4;
+  }
+
+  public cycle STA_absolute_x(u16 operand)
+  {
+    var address = operand + _x;
+    _bus.WriteByte((u16)address, _a);
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle STA_absolute_y(u16 operand)
+  {
+    var address = operand + _y;
+    _bus.WriteByte((u16)address, _a);
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle STA_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var address = (u16)(lo | hi << 8);
+
+    _bus.WriteByte(address, _a);
+
+    return 6;
+  }
+
+  public cycle STA_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+    var pointer = (u16)(lo | hi << 8);
+    var address = (u16)(pointer + _y);
+
+    _bus.WriteByte(address, _a);
+
+
+    return HasPageCrossed(pointer, address) ? 6 : 5;
   }
 
   public void Reset()
