@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using System.Numerics;
+
 namespace mos6502;
 
 public class Emulator
@@ -398,6 +401,133 @@ public class Emulator
     return 2;
   }
 
+  public cycle ADC_immediate(u8 operand)
+  {
+    var tempInt = _a + operand + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ operand) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return 2;
+  }
+
+  public cycle ADC_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return 3;
+  }
+
+  public cycle ADC_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return 4;
+  }
+
+  public cycle ADC_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return 4;
+  }
+
+  public cycle ADC_absolute_x(u16 operand)
+  {
+    var value = _bus.ReadByte((u16)(operand + _x));
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return HasPageCrossed(operand + _x, operand) ? 5 : 4;
+  }
+
+  public cycle ADC_absolute_y(u16 operand)
+  {
+    var value = _bus.ReadByte((u16)(operand + _y));
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = (u8)tempInt;
+
+    return HasPageCrossed(operand + _y, operand) ? 5 : 4;
+  }
+
+  public cycle ADC_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = (u16)(lo | hi << 8);
+    var value = _bus.ReadByte(pointer);
+
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (u8)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 6;
+  }
+
+  public cycle ADC_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+    var pointer = (u16)(lo | hi << 8);
+    var address = (u16)(pointer + _y);
+    var value = _bus.ReadByte(address);
+
+    var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ value) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
 
   public void Reset()
   {
@@ -412,6 +542,11 @@ public class Emulator
     else _status &= ~flag;
   }
 
+  private bool HasFlag(Status flag)
+  {
+    return (_status & flag) > 0;
+  }
+
   private void UpdateZNFlags(u8 value)
   {
     SetFlag(Status.Zero, value == 0);
@@ -421,5 +556,10 @@ public class Emulator
   private static bool HasPageCrossed(int a, int b)
   {
     return (a >> 8) != (b >> 8);
+  }
+
+  private static bool NumberToBool<T>(T number) where T : INumber<T>
+  {
+    return number != T.Zero;
   }
 }
