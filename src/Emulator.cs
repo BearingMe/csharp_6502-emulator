@@ -31,8 +31,7 @@ public class Emulator
   {
     var value = operand;
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -43,8 +42,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -55,8 +53,7 @@ public class Emulator
   {
     var value = _bus.ReadByte((u8)(operand + _x));
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -67,8 +64,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -80,8 +76,7 @@ public class Emulator
     var temp = operand + _x;
     var value = _bus.ReadByte((u16)(temp));
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -93,8 +88,7 @@ public class Emulator
     var temp = operand + _y;
     var value = _bus.ReadByte((u16)(temp));
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -109,8 +103,7 @@ public class Emulator
 
     var value = _bus.ReadByte(pointer);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -125,8 +118,7 @@ public class Emulator
     var address = (u16)(pointer + _y);
     var value = _bus.ReadByte(address);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _a = value;
 
@@ -137,8 +129,7 @@ public class Emulator
   {
     var value = operand;
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _x = value;
 
@@ -149,8 +140,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _x = value;
 
@@ -161,8 +151,7 @@ public class Emulator
   {
     var value = _bus.ReadByte((u8)(operand + _y));
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _x = value;
 
@@ -173,8 +162,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _x = value;
 
@@ -186,8 +174,7 @@ public class Emulator
     var temp = operand + _y;
     var value = _bus.ReadByte((u16)temp);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _x = value;
 
@@ -198,8 +185,7 @@ public class Emulator
   {
     var value = operand;
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _y = value;
 
@@ -210,8 +196,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _y = value;
 
@@ -222,8 +207,7 @@ public class Emulator
   {
     var value = _bus.ReadByte((u8)(operand + _x));
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _y = value;
 
@@ -234,8 +218,7 @@ public class Emulator
   {
     var value = _bus.ReadByte(operand);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _y = value;
 
@@ -247,8 +230,7 @@ public class Emulator
     var temp = operand + _x;
     var value = _bus.ReadByte((u16)temp);
 
-    SetFlag(Status.Negative, (value & 0x80) != 0);
-    SetFlag(Status.Zero, value == 0x00);
+    UpdateZNFlags(value);
 
     _y = value;
 
@@ -352,8 +334,7 @@ public class Emulator
   {
     _x = _a;
 
-    SetFlag(Status.Zero, _x == 0);
-    SetFlag(Status.Negative, (_x & 0x80) != 0);
+    UpdateZNFlags(_x);
 
     return 2;
   }
@@ -362,8 +343,7 @@ public class Emulator
   {
     _y = _a;
 
-    SetFlag(Status.Zero, _y == 0);
-    SetFlag(Status.Negative, (_y & 0x80) != 0);
+    UpdateZNFlags(_y);
 
     return 2;
   }
@@ -372,8 +352,7 @@ public class Emulator
   {
     _x = _stkp;
 
-    SetFlag(Status.Zero, _x == 0);
-    SetFlag(Status.Negative, (_x & 0x80) != 0);
+    UpdateZNFlags(_x);
 
     return 2;
   }
@@ -382,8 +361,7 @@ public class Emulator
   {
     _a = _x;
 
-    SetFlag(Status.Zero, _a == 0);
-    SetFlag(Status.Negative, (_a & 0x80) != 0);
+    UpdateZNFlags(_a);
 
     return 2;
   }
@@ -399,8 +377,7 @@ public class Emulator
   {
     _a = _y;
 
-    SetFlag(Status.Zero, _a == 0);
-    SetFlag(Status.Negative, (_a & 0x80) != 0);
+    UpdateZNFlags(_a);
 
     return 2;
   }
@@ -417,6 +394,12 @@ public class Emulator
   {
     if (active) _status |= flag;
     else _status &= ~flag;
+  }
+
+  private void UpdateZNFlags(u8 value)
+  {
+    SetFlag(Status.Zero, value == 0);
+    SetFlag(Status.Negative, (value & 0x80) != 0);
   }
 
   private static bool HasPageCrossed(int a, int b)
