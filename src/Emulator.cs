@@ -13,6 +13,7 @@ public class Emulator
   public u8 A => _a;
   public u8 X => _x;
   public u8 Y => _y;
+  public u8 StackPointer => _stkp;
   public Status Status => _status;
 
   public Emulator(Bus bus)
@@ -345,6 +346,65 @@ public class Emulator
     _bus.WriteByte(operand, _y);
     return 4;
   }
+
+
+  public cycle TAX()
+  {
+    _x = _a;
+
+    SetFlag(Status.Zero, _x == 0);
+    SetFlag(Status.Negative, (_x & 0x80) != 0);
+
+    return 2;
+  }
+
+  public cycle TAY()
+  {
+    _y = _a;
+
+    SetFlag(Status.Zero, _y == 0);
+    SetFlag(Status.Negative, (_y & 0x80) != 0);
+
+    return 2;
+  }
+
+  public cycle TSX()
+  {
+    _x = _stkp;
+
+    SetFlag(Status.Zero, _x == 0);
+    SetFlag(Status.Negative, (_x & 0x80) != 0);
+
+    return 2;
+  }
+
+  public cycle TXA()
+  {
+    _a = _x;
+
+    SetFlag(Status.Zero, _a == 0);
+    SetFlag(Status.Negative, (_a & 0x80) != 0);
+
+    return 2;
+  }
+
+  public cycle TXS()
+  {
+    _stkp = _x;
+
+    return 2;
+  }
+
+  public cycle TYA()
+  {
+    _a = _y;
+
+    SetFlag(Status.Zero, _a == 0);
+    SetFlag(Status.Negative, (_a & 0x80) != 0);
+
+    return 2;
+  }
+
 
   public void Reset()
   {
