@@ -310,6 +310,42 @@ public class Emulator
     return HasPageCrossed(pointer, address) ? 6 : 5;
   }
 
+  public cycle STX_zero_page(u8 operand)
+  {
+    _bus.WriteByte(operand, _x);
+    return 3;
+  }
+
+  public cycle STX_zero_page_y(u8 operand)
+  {
+    _bus.WriteByte((u8)(operand + _y), _x);
+    return 4;
+  }
+
+  public cycle STX_absolute(u16 operand)
+  {
+    _bus.WriteByte(operand, _x);
+    return 4;
+  }
+
+  public cycle STY_zero_page(u8 operand)
+  {
+    _bus.WriteByte(operand, _y);
+    return 3;
+  }
+
+  public cycle STY_zero_page_x(u8 operand)
+  {
+    _bus.WriteByte((u8)(operand + _x), _y);
+    return 4;
+  }
+
+  public cycle STY_absolute(u16 operand)
+  {
+    _bus.WriteByte(operand, _y);
+    return 4;
+  }
+
   public void Reset()
   {
     _stkp = (u8)(_stkp - 3);
