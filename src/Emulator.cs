@@ -751,6 +751,291 @@ public class Emulator
     return HasPageCrossed(address, pointer) ? 6 : 5;
   }
 
+  public cycle ORA_immediate(u8 operand)
+  {
+    _a = (u8)(_a | operand);
+    UpdateZNFlags(_a);
+
+    return 2;
+  }
+
+  public cycle ORA_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return 3;
+  }
+
+  public cycle ORA_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle ORA_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle ORA_absolute_x(u16 operand)
+  {
+    var address = (u16)(operand + _x);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle ORA_absolute_y(u16 operand)
+  {
+    var address = (u16)(operand + _y);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle ORA_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+
+    var value = _bus.ReadByte(pointer);
+
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return 6;
+  }
+
+  public cycle ORA_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+
+    var pointer = CombineBytesToWord(lo, hi);
+    var address = (u16)(pointer + _y);
+
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a | value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
+
+  public cycle EOR_immediate(u8 operand)
+  {
+    _a = (u8)(_a ^ operand);
+    UpdateZNFlags(_a);
+
+    return 2;
+  }
+
+  public cycle EOR_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return 3;
+  }
+
+  public cycle EOR_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle EOR_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return 4;
+  }
+
+  public cycle EOR_absolute_x(u16 operand)
+  {
+    var address = (u16)(operand + _x);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle EOR_absolute_y(u16 operand)
+  {
+    var address = (u16)(operand + _y);
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle EOR_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+
+    var value = _bus.ReadByte(pointer);
+
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return 6;
+  }
+
+  public cycle EOR_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+
+    var pointer = CombineBytesToWord(lo, hi);
+    var address = (u16)(pointer + _y);
+
+    var value = _bus.ReadByte(address);
+
+    _a = (u8)(_a ^ value);
+    UpdateZNFlags(_a);
+
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
+
+  public cycle CMP_immediate(u8 operand)
+  {
+    CompareRegisterAndValue(_a, operand);
+    return 2;
+  }
+
+  public cycle CMP_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_a, value);
+    return 3;
+  }
+
+  public cycle CMP_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    CompareRegisterAndValue(_a, value);
+    return 4;
+  }
+
+  public cycle CMP_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_a, value);
+    return 4;
+  }
+
+  public cycle CMP_absolute_x(u16 operand)
+  {
+    var address = (u16)(operand + _x);
+    var value = _bus.ReadByte(address);
+    CompareRegisterAndValue(_a, value);
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle CMP_absolute_y(u16 operand)
+  {
+    var address = (u16)(operand + _y);
+    var value = _bus.ReadByte(address);
+    CompareRegisterAndValue(_a, value);
+    return HasPageCrossed(address, operand) ? 5 : 4;
+  }
+
+  public cycle CMP_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+    var value = _bus.ReadByte(pointer);
+    CompareRegisterAndValue(_a, value);
+    return 6;
+  }
+
+  public cycle CMP_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+    var address = (u16)(pointer + _y);
+    var value = _bus.ReadByte(address);
+    CompareRegisterAndValue(_a, value);
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
+
+  public cycle CPX_immediate(u8 operand)
+  {
+    CompareRegisterAndValue(_x, operand);
+    return 2;
+  }
+
+  public cycle CPX_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_x, value);
+    return 3;
+  }
+
+  public cycle CPX_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_x, value);
+    return 4;
+  }
+
+  public cycle CPY_immediate(u8 operand)
+  {
+    CompareRegisterAndValue(_y, operand);
+    return 2;
+  }
+
+  public cycle CPY_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_y, value);
+    return 3;
+  }
+
+  public cycle CPY_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    CompareRegisterAndValue(_y, value);
+    return 4;
+  }
+
+  private void CompareRegisterAndValue(u8 reg, u8 value)
+  {
+    var diff = (u8)(reg - value);
+    SetFlag(Status.Carry, reg >= value);
+    UpdateZNFlags(diff);
+  }
+
   public void Reset()
   {
     _stkp = (u8)(_stkp - 3);
