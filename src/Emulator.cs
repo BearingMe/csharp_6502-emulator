@@ -132,6 +132,128 @@ public class Emulator
     return HasPageCrossed(pointer, address) ? 6 : 5;
   }
 
+  public cycle LDX_immediate(u8 operand)
+  {
+    var value = operand;
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _x = value;
+
+    return 2;
+  }
+
+  public cycle LDX_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _x = value;
+
+    return 3;
+  }
+
+  public cycle LDX_zero_page_y(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _y));
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _x = value;
+
+    return 4;
+  }
+
+  public cycle LDX_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _x = value;
+
+    return 4;
+  }
+
+  public cycle LDX_absolute_y(u16 operand)
+  {
+    var temp = operand + _y;
+    var value = _bus.ReadByte((u16)temp);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _x = value;
+
+    return HasPageCrossed(operand, temp) ? 5 : 4;
+  }
+
+  public cycle LDY_immediate(u8 operand)
+  {
+    var value = operand;
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _y = value;
+
+    return 2;
+  }
+
+  public cycle LDY_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _y = value;
+
+    return 3;
+  }
+
+  public cycle LDY_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _y = value;
+
+    return 4;
+  }
+
+  public cycle LDY_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _y = value;
+
+    return 4;
+  }
+
+  public cycle LDY_absolute_x(u16 operand)
+  {
+    var temp = operand + _x;
+    var value = _bus.ReadByte((u16)temp);
+
+    SetFlag(Status.Negative, (value & 0x80) != 0);
+    SetFlag(Status.Zero, value == 0x00);
+
+    _y = value;
+
+    return HasPageCrossed(operand, temp) ? 5 : 4;
+  }
+
   public void Reset()
   {
     _stkp = (u8)(_stkp - 3);
