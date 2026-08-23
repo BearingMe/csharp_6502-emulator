@@ -382,6 +382,22 @@ public class Emulator
     return 2;
   }
 
+  public cycle INX()
+  {
+    _x = (u8)(_x + 1);
+    UpdateZNFlags(_x);
+
+    return 2;
+  }
+
+  public cycle INY()
+  {
+    _y = (u8)(_y + 1);
+    UpdateZNFlags(_y);
+
+    return 2;
+  }
+
 
   public void Reset()
   {
