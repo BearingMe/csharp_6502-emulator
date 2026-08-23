@@ -102,7 +102,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte((u8)(operand + _x));
     var hi = _bus.ReadByte((u8)(operand + _x + 1));
-    var pointer = (u16)(lo | hi << 8);
+    var pointer = CombineBytesToWord(lo, hi);
 
     var value = _bus.ReadByte(pointer);
 
@@ -117,7 +117,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte(operand);
     var hi = _bus.ReadByte((u8)(operand + 1));
-    var pointer = (u16)(lo | hi << 8);
+    var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _y);
     var value = _bus.ReadByte(address);
 
@@ -276,7 +276,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte((u8)(operand + _x));
     var hi = _bus.ReadByte((u8)(operand + _x + 1));
-    var address = (u16)(lo | hi << 8);
+    var address = CombineBytesToWord(lo, hi);
 
     _bus.WriteByte(address, _a);
 
@@ -287,7 +287,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte(operand);
     var hi = _bus.ReadByte((u8)(operand + 1));
-    var pointer = (u16)(lo | hi << 8);
+    var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _y);
 
     _bus.WriteByte(address, _a);
@@ -494,7 +494,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte((u8)(operand + _x));
     var hi = _bus.ReadByte((u8)(operand + _x + 1));
-    var pointer = (u16)(lo | hi << 8);
+    var pointer = CombineBytesToWord(lo, hi);
     var value = _bus.ReadByte(pointer);
 
     var tempInt = _a + value + (HasFlag(Status.Carry) ? 1 : 0);
@@ -513,7 +513,7 @@ public class Emulator
   {
     var lo = _bus.ReadByte(operand);
     var hi = _bus.ReadByte((u8)(operand + 1));
-    var pointer = (u16)(lo | hi << 8);
+    var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _y);
     var value = _bus.ReadByte(address);
 
@@ -561,5 +561,10 @@ public class Emulator
   private static bool NumberToBool<T>(T number) where T : INumber<T>
   {
     return number != T.Zero;
+  }
+
+  private static u16 CombineBytesToWord(u8 lo, u8 hi)
+  {
+    return (u16)(lo | hi << 8);
   }
 }
