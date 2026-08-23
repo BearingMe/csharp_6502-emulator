@@ -10,66 +10,66 @@ public class Addressing(Bus bus, Emulator cpu)
     return new(operand, 0);
   }
 
-  public AddressingResult<u8> ZeroPage(u8 operand)
+  public AddressingResult<u16> ZeroPage(u8 operand)
   {
-    var value = _bus.ReadByte(operand);
-    return new(value, 0);
+    return new(operand, 0);
   }
 
-  public AddressingResult<u8> ZeroPageX(u8 operand)
+  public AddressingResult<u16> ZeroPageX(u8 operand)
   {
     var address = (u8)(operand + _cpu.X);
-    var value = _bus.ReadByte(address);
-    return new(value, 0);
+
+    return new(address, 0);
   }
 
-  public AddressingResult<u8> ZeroPageY(u8 operand)
+  public AddressingResult<u16> ZeroPageY(u8 operand)
   {
     var address = (u8)(operand + _cpu.Y);
-    var value = _bus.ReadByte(address);
-    return new(value, 0);
+
+    return new(address, 0);
   }
 
-  public AddressingResult<u8> Absolute(u16 operand)
+  public AddressingResult<u16> Absolute(u16 operand)
   {
-    var value = _bus.ReadByte(operand);
-    return new(value, 0);
+    return new(operand, 0);
   }
 
-  public AddressingResult<u8> AbsoluteX(u16 operand)
+  public AddressingResult<u16> AbsoluteX(u16 operand)
   {
     var address = (u16)(operand + _cpu.X);
-    var value = _bus.ReadByte(address);
     var extraCycle = HasPageCrossed(operand, address) ? 1 : 0;
-    return new(value, extraCycle);
+
+    return new(address, extraCycle);
   }
 
-  public AddressingResult<u8> AbsoluteY(u16 operand)
+  public AddressingResult<u16> AbsoluteY(u16 operand)
   {
     var address = (u16)(operand + _cpu.Y);
-    var value = _bus.ReadByte(address);
     var extraCycle = HasPageCrossed(operand, address) ? 1 : 0;
-    return new(value, extraCycle);
+
+    return new(address, extraCycle);
   }
 
-  public AddressingResult<u8> IndexedIndirect(u8 operand)
+  public AddressingResult<u16> IndexedIndirect(u8 operand)
   {
     var lo = _bus.ReadByte((u8)(operand + _cpu.X));
     var hi = _bus.ReadByte((u8)(operand + _cpu.X + 1));
-    var pointer = CombineBytesToWord(lo, hi);
-    var value = _bus.ReadByte(pointer);
-    return new(value, 0);
+
+    var address = CombineBytesToWord(lo, hi);
+
+    return new(address, 0);
   }
 
-  public AddressingResult<u8> IndirectIndexed(u8 operand)
+  public AddressingResult<u16> IndirectIndexed(u8 operand)
   {
     var lo = _bus.ReadByte(operand);
     var hi = _bus.ReadByte((u8)(operand + 1));
+
     var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _cpu.Y);
-    var value = _bus.ReadByte(address);
     var extraCycle = HasPageCrossed(pointer, address) ? 1 : 0;
-    return new(value, extraCycle);
+
+    return new(address, extraCycle);
   }
 
   private static bool HasPageCrossed(int a, int b)
