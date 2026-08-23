@@ -529,6 +529,141 @@ public class Emulator
     return HasPageCrossed(address, pointer) ? 6 : 5;
   }
 
+  public cycle SBC_immediate(u8 operand)
+  {
+    var invertedValue = (u8)~operand;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 2;
+  }
+  public cycle SBC_zero_page(u8 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 3;
+  }
+
+  public cycle SBC_zero_page_x(u8 operand)
+  {
+    var value = _bus.ReadByte((u8)(operand + _x));
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 4;
+  }
+
+  public cycle SBC_absolute(u16 operand)
+  {
+    var value = _bus.ReadByte(operand);
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 4;
+  }
+
+  public cycle SBC_absolute_x(u16 operand)
+  {
+    var value = _bus.ReadByte((u16)(operand + _x));
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return HasPageCrossed(operand + _x, operand) ? 5 : 4;
+  }
+
+  public cycle SBC_absolute_y(u16 operand)
+  {
+    var value = _bus.ReadByte((u16)(operand + _y));
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return HasPageCrossed(operand + _y, operand) ? 5 : 4;
+  }
+
+  public cycle SBC_indexed_indirect(u8 operand)
+  {
+    var lo = _bus.ReadByte((u8)(operand + _x));
+    var hi = _bus.ReadByte((u8)(operand + _x + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+    var value = _bus.ReadByte(pointer);
+
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return 6;
+  }
+
+  public cycle SBC_indirect_indexed(u8 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
+    var pointer = CombineBytesToWord(lo, hi);
+    var address = (u16)(pointer + _y);
+    var value = _bus.ReadByte(address);
+
+    var invertedValue = (u8)~value;
+    var tempInt = _a + invertedValue + (HasFlag(Status.Carry) ? 1 : 0);
+    var tempByte = (byte)tempInt;
+
+    SetFlag(Status.Carry, tempInt > 0xFF);
+    SetFlag(Status.Overflow, NumberToBool((tempByte ^ _a) & (tempByte ^ invertedValue) & 0x80));
+    UpdateZNFlags(tempByte);
+
+    _a = tempByte;
+
+    return HasPageCrossed(address, pointer) ? 6 : 5;
+  }
+
   public void Reset()
   {
     _stkp = (u8)(_stkp - 3);
