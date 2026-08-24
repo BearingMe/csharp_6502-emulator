@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO.Compression;
 using System.Numerics;
 
@@ -1031,6 +1032,30 @@ public class Emulator
     var value = _bus.ReadByte(addressMode.Value);
     CompareRegisterAndValue(_y, value);
     return 4 + addressMode.Cycles;
+  }
+
+  public cycle Bit_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _a & addressMode.Value;
+
+    SetFlag(Status.Zero, result == 0);
+    SetFlag(Status.Overflow, (addressMode.Value & 0x40) != 0);
+    SetFlag(Status.Negative, (addressMode.Value & 0x80) != 0);
+
+    return 3 + addressMode.Cycles;
+  }
+
+  public cycle Bit_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _a & addressMode.Value;
+
+    SetFlag(Status.Zero, result == 0);
+    SetFlag(Status.Overflow, (addressMode.Value & 0x40) != 0);
+    SetFlag(Status.Negative, (addressMode.Value & 0x80) != 0);
+
+    return 3 + addressMode.Cycles;
   }
 
   private void CompareRegisterAndValue(u8 reg, u8 value)
