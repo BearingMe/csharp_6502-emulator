@@ -180,4 +180,48 @@ public class ExecutionPipelineTests
     branchCycles.Should().Be(2);
     cpu.PC.Should().Be(0x8004);
   }
+
+  [Fact]
+  public void Step_Dex_DecrementsXAndReturnsTwoCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x05, // LDX #$05
+      0xCA        // DEX
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.X.Should().Be(0x04);
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(2);
+  }
+
+  [Fact]
+  public void Step_Dey_DecrementsYAndReturnsTwoCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA0, 0x05, // LDY #$05
+      0x88        // DEY
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.Y.Should().Be(0x04);
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(2);
+  }
 }

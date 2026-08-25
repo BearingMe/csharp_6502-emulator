@@ -216,6 +216,28 @@ public class Instructions(Cpu cpu)
 
   public InstructionResult BVS(i8 offset) => Branch(HasFlag(Status.Overflow), offset);
 
+  public InstructionResult DEX()
+  {
+    var result = (byte)(_cpu.X - 1);
+
+    UpdateZNFlags(result);
+
+    _cpu.X = result;
+
+    return new(2);
+  }
+
+  public InstructionResult DEY()
+  {
+    var result = (byte)(_cpu.Y - 1);
+
+    UpdateZNFlags(result);
+
+    _cpu.Y = result;
+
+    return new(2);
+  }
+
   private InstructionResult Branch(bool condition, i8 offset)
   {
     if (condition)

@@ -94,6 +94,10 @@ public class Emulator
       0xE8 => INX(),
       0xC8 => INY(),
 
+      // --- Decrements ---
+      0xCA => DEX(),
+      0x88 => DEY(),
+
       // --- ADC ---
       0x69 => ADC_immediate(_cpu.FetchByte()),
       0x65 => ADC_zero_page(_cpu.FetchByte()),
@@ -521,6 +525,20 @@ public class Emulator
   public cycle INY()
   {
     var result = _instructions.INY();
+
+    return result.Cycles;
+  }
+
+  public cycle DEX()
+  {
+    var result = _instructions.DEX();
+
+    return result.Cycles;
+  }
+
+  public cycle DEY()
+  {
+    var result = _instructions.DEY();
 
     return result.Cycles;
   }
