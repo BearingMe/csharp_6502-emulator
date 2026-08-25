@@ -23,7 +23,7 @@ public class BitTests
     var cpu = new Emulator(bus);
     cpu.LDA_immediate(initialA);
 
-    var cycles = cpu.Bit_zero_page(0x10);
+    var cycles = cpu.BIT_zero_page(0x10);
 
     cpu.Status.HasFlag(Status.Zero).Should().Be(expectedZero);
     cpu.Status.HasFlag(Status.Overflow).Should().Be(expectedOverflow);
@@ -42,7 +42,7 @@ public class BitTests
     cpu.LDX_immediate(0x10);
     cpu.LDY_immediate(0x20);
 
-    cpu.Bit_zero_page(0x42);
+    cpu.BIT_zero_page(0x42);
 
     cpu.A.Should().Be(0x3C);
     cpu.X.Should().Be(0x10);
@@ -57,7 +57,7 @@ public class BitTests
     var cpu = new Emulator(bus);
     cpu.LDA_immediate(0x55);
 
-    cpu.Bit_zero_page(0x42);
+    cpu.BIT_zero_page(0x42);
 
     bus.ReadByte(0x0042).Should().Be(0xAA);
   }
@@ -72,7 +72,7 @@ public class BitTests
     cpu.ADC_immediate(0x01); // sets Carry and Zero
     cpu.LDA_immediate(0x00); // clears Zero, preserves Carry
 
-    cpu.Bit_zero_page(0x10);
+    cpu.BIT_zero_page(0x10);
 
     cpu.Status.Should().HaveFlag(Status.Carry);
     cpu.Status.Should().HaveFlag(Status.Interrupt);
@@ -86,7 +86,7 @@ public class BitTests
     var cpu = new Emulator(bus);
     cpu.LDA_immediate(0b0100_0000);
 
-    var cycles = cpu.Bit_absolute(0x1234);
+    var cycles = cpu.BIT_absolute(0x1234);
 
     cpu.A.Should().Be(0b0100_0000);
     cpu.Status.Should().NotHaveFlag(Status.Zero);

@@ -72,6 +72,11 @@ public class Addressing(Bus bus, Emulator cpu)
     return new(address, extraCycle);
   }
 
+  public AddressingResult<i8> Relative(u8 operand)
+  {
+    return new((i8)operand, 0);
+  }
+
   private static bool HasPageCrossed(int a, int b)
   {
     return (a >> 8) != (b >> 8);

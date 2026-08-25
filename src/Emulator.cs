@@ -19,6 +19,7 @@ public class Emulator
   public u8 X => _x;
   public u8 Y => _y;
   public u8 StackPointer => _stkp;
+  public u16 PC => _pc;
   public Status Status => _status;
 
   public Emulator(Bus bus)
@@ -1034,29 +1035,176 @@ public class Emulator
     return 4 + addressMode.Cycles;
   }
 
-  public cycle Bit_zero_page(u8 operand)
+  public cycle BIT_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var result = _a & addressMode.Value;
+    var value = _bus.ReadByte(addressMode.Value);
+    var result = _a & value;
 
     SetFlag(Status.Zero, result == 0);
-    SetFlag(Status.Overflow, (addressMode.Value & 0x40) != 0);
-    SetFlag(Status.Negative, (addressMode.Value & 0x80) != 0);
+    SetFlag(Status.Overflow, (value & 0x40) != 0);
+    SetFlag(Status.Negative, (value & 0x80) != 0);
 
     return 3 + addressMode.Cycles;
   }
 
-  public cycle Bit_absolute(u16 operand)
+  public cycle BIT_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var result = _a & addressMode.Value;
+    var value = _bus.ReadByte(addressMode.Value);
+    var result = _a & value;
 
     SetFlag(Status.Zero, result == 0);
-    SetFlag(Status.Overflow, (addressMode.Value & 0x40) != 0);
-    SetFlag(Status.Negative, (addressMode.Value & 0x80) != 0);
+    SetFlag(Status.Overflow, (value & 0x40) != 0);
+    SetFlag(Status.Negative, (value & 0x80) != 0);
 
-    return 3 + addressMode.Cycles;
+    return 4 + addressMode.Cycles;
   }
+
+  public cycle BCC_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (!HasFlag(Status.Carry))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BCS_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (HasFlag(Status.Carry))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BEQ_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (HasFlag(Status.Zero))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BNE_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (!HasFlag(Status.Zero))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BMI_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (HasFlag(Status.Negative))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BPL_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (!HasFlag(Status.Negative))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BVC_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (!HasFlag(Status.Overflow))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
+  public cycle BVS_relative(u8 operand)
+  {
+    var addressMode = _addressing.Relative(operand);
+
+    if (HasFlag(Status.Overflow))
+    {
+      var oldPc = _pc;
+      var newPc = (u16)(_pc + addressMode.Value);
+
+      _pc = newPc;
+
+      var extraCycle = HasPageCrossed(oldPc, newPc) ? 1 : 0;
+      return 3 + extraCycle;
+    }
+
+    return 2 + addressMode.Cycles;
+  }
+
 
   private void CompareRegisterAndValue(u8 reg, u8 value)
   {
