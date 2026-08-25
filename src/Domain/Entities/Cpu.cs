@@ -43,4 +43,18 @@ public class Cpu
 
     return (u16)(lo | hi << 8);
   }
+
+  public u8 FetchByte()
+  {
+    var value = ReadByte(PC);
+    PC++;
+    return value;
+  }
+
+  public u16 FetchWord()
+  {
+    var value = ReadWord(PC);
+    PC += 2;
+    return value;
+  }
 }
