@@ -1,9 +1,10 @@
-namespace mos6502;
+using mos6502.src.Domain.Objects;
 
-public class Addressing(Bus bus, Emulator cpu)
+namespace mos6502.src.Domain.Entities;
+
+public class Addressing(Cpu cpu)
 {
-  private readonly Bus _bus = bus;
-  private readonly Emulator _cpu = cpu;
+  private readonly Cpu _cpu = cpu;
 
   public AddressingResult<u8> Immediate(u8 operand)
   {
@@ -52,8 +53,8 @@ public class Addressing(Bus bus, Emulator cpu)
 
   public AddressingResult<u16> IndexedIndirect(u8 operand)
   {
-    var lo = _bus.ReadByte((u8)(operand + _cpu.X));
-    var hi = _bus.ReadByte((u8)(operand + _cpu.X + 1));
+    var lo = _cpu.ReadByte((u8)(operand + _cpu.X));
+    var hi = _cpu.ReadByte((u8)(operand + _cpu.X + 1));
 
     var address = CombineBytesToWord(lo, hi);
 
@@ -62,8 +63,8 @@ public class Addressing(Bus bus, Emulator cpu)
 
   public AddressingResult<u16> IndirectIndexed(u8 operand)
   {
-    var lo = _bus.ReadByte(operand);
-    var hi = _bus.ReadByte((u8)(operand + 1));
+    var lo = _cpu.ReadByte(operand);
+    var hi = _cpu.ReadByte((u8)(operand + 1));
 
     var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _cpu.Y);

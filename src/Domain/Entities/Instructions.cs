@@ -1,9 +1,11 @@
-namespace mos6502;
+using mos6502.src.Domain.Objects;
+using mos6502.src.Domain.Enums;
 
-public class Instructions(Bus bus, Emulator cpu)
+namespace mos6502.src.Domain.Entities;
+
+public class Instructions(Cpu cpu)
 {
-  private readonly Bus _bus = bus;
-  private readonly Emulator _cpu = cpu;
+  private readonly Cpu _cpu = cpu;
 
   public InstructionResult LDA(u8 value)
   {
@@ -31,21 +33,21 @@ public class Instructions(Bus bus, Emulator cpu)
 
   public InstructionResult STA(u16 address)
   {
-    _bus.WriteByte(address, _cpu.A);
+    _cpu.WriteByte(address, _cpu.A);
 
     return new(2);
   }
 
   public InstructionResult STX(u16 address)
   {
-    _bus.WriteByte(address, _cpu.X);
+    _cpu.WriteByte(address, _cpu.X);
 
     return new(2);
   }
 
   public InstructionResult STY(u16 address)
   {
-    _bus.WriteByte(address, _cpu.Y);
+    _cpu.WriteByte(address, _cpu.Y);
 
     return new(2);
   }

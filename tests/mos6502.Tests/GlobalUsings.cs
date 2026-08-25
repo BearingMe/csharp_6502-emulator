@@ -6,3 +6,5 @@ global using cycle = int;
 global using FluentAssertions;
 global using Xunit;
 global using mos6502;
+global using mos6502.src.Domain.Enums;
+global using mos6502.src.Domain.Entities;

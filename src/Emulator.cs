@@ -1,28 +1,35 @@
+using mos6502.src.Domain.Entities;
+using mos6502.src.Domain.Enums;
+
 namespace mos6502;
+
+public class Bus : Cpu
+{
+}
 
 public class Emulator
 {
-  private readonly Bus _bus;
+  private readonly Cpu _cpu;
   private readonly Addressing _addressing;
   private readonly Instructions _instructions;
 
-  public u8 A { get; internal set; }
-  public u8 X { get; internal set; }
-  public u8 Y { get; internal set; }
-  public u8 StackPointer { get; internal set; }
-  public u16 PC { get; internal set; }
-  public Status Status { get; internal set; }
+  public u8 A { get => _cpu.A; internal set => _cpu.A = value; }
+  public u8 X { get => _cpu.X; internal set => _cpu.X = value; }
+  public u8 Y { get => _cpu.Y; internal set => _cpu.Y = value; }
+  public u8 StackPointer { get => _cpu.StackPointer; internal set => _cpu.StackPointer = value; }
+  public u16 PC { get => _cpu.PC; internal set => _cpu.PC = value; }
+  public Status Status { get => _cpu.Status; internal set => _cpu.Status = value; }
 
-  public Emulator(Bus bus)
+  public Emulator(Cpu cpu)
   {
-    _bus = bus;
-    _addressing = new Addressing(bus, this);
-    _instructions = new Instructions(bus, this);
+    _cpu = cpu;
+    _addressing = cpu.Addressing;
+    _instructions = cpu.Instructions;
     A = 0x00;
     X = 0x00;
     Y = 0x00;
     StackPointer = 0xFD;
-    PC = _bus.ReadWord(0xFFFC);
+    PC = _cpu.ReadWord(0xFFFC);
     Status = 0x00 | Status.Interrupt;
   }
 
@@ -37,7 +44,7 @@ public class Emulator
   public cycle LDA_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -46,7 +53,7 @@ public class Emulator
   public cycle LDA_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -55,7 +62,7 @@ public class Emulator
   public cycle LDA_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -64,7 +71,7 @@ public class Emulator
   public cycle LDA_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -73,7 +80,7 @@ public class Emulator
   public cycle LDA_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -82,7 +89,7 @@ public class Emulator
   public cycle LDA_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -91,7 +98,7 @@ public class Emulator
   public cycle LDA_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -108,7 +115,7 @@ public class Emulator
   public cycle LDX_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -117,7 +124,7 @@ public class Emulator
   public cycle LDX_zero_page_y(u8 operand)
   {
     var addressMode = _addressing.ZeroPageY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -126,7 +133,7 @@ public class Emulator
   public cycle LDX_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -135,7 +142,7 @@ public class Emulator
   public cycle LDX_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -152,7 +159,7 @@ public class Emulator
   public cycle LDY_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -161,7 +168,7 @@ public class Emulator
   public cycle LDY_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -170,7 +177,7 @@ public class Emulator
   public cycle LDY_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -179,7 +186,7 @@ public class Emulator
   public cycle LDY_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.LDY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -356,7 +363,7 @@ public class Emulator
   public cycle ADC_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -365,7 +372,7 @@ public class Emulator
   public cycle ADC_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -374,7 +381,7 @@ public class Emulator
   public cycle ADC_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -383,7 +390,7 @@ public class Emulator
   public cycle ADC_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -392,7 +399,7 @@ public class Emulator
   public cycle ADC_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -401,7 +408,7 @@ public class Emulator
   public cycle ADC_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -410,7 +417,7 @@ public class Emulator
   public cycle ADC_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ADC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -427,7 +434,7 @@ public class Emulator
   public cycle SBC_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -436,7 +443,7 @@ public class Emulator
   public cycle SBC_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -445,7 +452,7 @@ public class Emulator
   public cycle SBC_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -454,7 +461,7 @@ public class Emulator
   public cycle SBC_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -463,7 +470,7 @@ public class Emulator
   public cycle SBC_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -472,7 +479,7 @@ public class Emulator
   public cycle SBC_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -481,7 +488,7 @@ public class Emulator
   public cycle SBC_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.SBC(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -498,7 +505,7 @@ public class Emulator
   public cycle AND_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -507,7 +514,7 @@ public class Emulator
   public cycle AND_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -516,7 +523,7 @@ public class Emulator
   public cycle AND_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -525,7 +532,7 @@ public class Emulator
   public cycle AND_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -534,7 +541,7 @@ public class Emulator
   public cycle AND_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -543,7 +550,7 @@ public class Emulator
   public cycle AND_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -552,7 +559,7 @@ public class Emulator
   public cycle AND_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.AND(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -569,7 +576,7 @@ public class Emulator
   public cycle ORA_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -578,7 +585,7 @@ public class Emulator
   public cycle ORA_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -587,7 +594,7 @@ public class Emulator
   public cycle ORA_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -596,7 +603,7 @@ public class Emulator
   public cycle ORA_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -605,7 +612,7 @@ public class Emulator
   public cycle ORA_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -614,7 +621,7 @@ public class Emulator
   public cycle ORA_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -623,7 +630,7 @@ public class Emulator
   public cycle ORA_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.ORA(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -640,7 +647,7 @@ public class Emulator
   public cycle EOR_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -649,7 +656,7 @@ public class Emulator
   public cycle EOR_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -658,7 +665,7 @@ public class Emulator
   public cycle EOR_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -667,7 +674,7 @@ public class Emulator
   public cycle EOR_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -676,7 +683,7 @@ public class Emulator
   public cycle EOR_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -685,7 +692,7 @@ public class Emulator
   public cycle EOR_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -694,7 +701,7 @@ public class Emulator
   public cycle EOR_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.EOR(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -711,7 +718,7 @@ public class Emulator
   public cycle CMP_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -720,7 +727,7 @@ public class Emulator
   public cycle CMP_zero_page_x(u8 operand)
   {
     var addressMode = _addressing.ZeroPageX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -729,7 +736,7 @@ public class Emulator
   public cycle CMP_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -738,7 +745,7 @@ public class Emulator
   public cycle CMP_absolute_x(u16 operand)
   {
     var addressMode = _addressing.AbsoluteX(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -747,7 +754,7 @@ public class Emulator
   public cycle CMP_absolute_y(u16 operand)
   {
     var addressMode = _addressing.AbsoluteY(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -756,7 +763,7 @@ public class Emulator
   public cycle CMP_indexed_indirect(u8 operand)
   {
     var addressMode = _addressing.IndexedIndirect(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -765,7 +772,7 @@ public class Emulator
   public cycle CMP_indirect_indexed(u8 operand)
   {
     var addressMode = _addressing.IndirectIndexed(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CMP(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -782,7 +789,7 @@ public class Emulator
   public cycle CPX_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CPX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -791,7 +798,7 @@ public class Emulator
   public cycle CPX_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CPX(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -808,7 +815,7 @@ public class Emulator
   public cycle CPY_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CPY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -817,7 +824,7 @@ public class Emulator
   public cycle CPY_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.CPY(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -826,7 +833,7 @@ public class Emulator
   public cycle BIT_zero_page(u8 operand)
   {
     var addressMode = _addressing.ZeroPage(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.BIT(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -835,7 +842,7 @@ public class Emulator
   public cycle BIT_absolute(u16 operand)
   {
     var addressMode = _addressing.Absolute(operand);
-    var value = _bus.ReadByte(addressMode.Value);
+    var value = _cpu.ReadByte(addressMode.Value);
     var result = _instructions.BIT(value);
 
     return result.Cycles + addressMode.Cycles;
@@ -908,7 +915,7 @@ public class Emulator
   public void Reset()
   {
     StackPointer = (u8)(StackPointer - 3);
-    PC = _bus.ReadWord(0xFFFC);
+    PC = _cpu.ReadWord(0xFFFC);
     Status = 0x00 | Status.Interrupt;
   }
 }
