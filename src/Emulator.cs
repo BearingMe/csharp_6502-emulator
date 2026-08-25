@@ -105,6 +105,13 @@ public class Emulator
       0x0E => ASL_absolute(_cpu.FetchWord()),
       0x1E => ASL_absolute_x(_cpu.FetchWord()),
 
+      // --- LSR ---
+      0x4A => LSR_accumulator(),
+      0x46 => LSR_zero_page(_cpu.FetchByte()),
+      0x56 => LSR_zero_page_x(_cpu.FetchByte()),
+      0x4E => LSR_absolute(_cpu.FetchWord()),
+      0x5E => LSR_absolute_x(_cpu.FetchWord()),
+
       // --- ADC ---
       0x69 => ADC_immediate(_cpu.FetchByte()),
       0x65 => ADC_zero_page(_cpu.FetchByte()),
@@ -585,6 +592,45 @@ public class Emulator
   {
     var addressMode = _addressing.AbsoluteX(operand);
     var result = _instructions.ASL(addressMode.Value);
+
+    return 7;
+  }
+
+  public cycle LSR_accumulator()
+  {
+    var result = _instructions.LSR();
+
+    return result.Cycles;
+  }
+
+  public cycle LSR_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _instructions.LSR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle LSR_zero_page_x(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPageX(operand);
+    var result = _instructions.LSR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle LSR_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.LSR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle LSR_absolute_x(u16 operand)
+  {
+    var addressMode = _addressing.AbsoluteX(operand);
+    var result = _instructions.LSR(addressMode.Value);
 
     return 7;
   }
