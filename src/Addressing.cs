@@ -12,26 +12,26 @@ public class Addressing(Bus bus, Emulator cpu)
 
   public AddressingResult<u16> ZeroPage(u8 operand)
   {
-    return new(operand, 0);
+    return new(operand, 1);
   }
 
   public AddressingResult<u16> ZeroPageX(u8 operand)
   {
     var address = (u8)(operand + _cpu.X);
 
-    return new(address, 0);
+    return new(address, 2);
   }
 
   public AddressingResult<u16> ZeroPageY(u8 operand)
   {
     var address = (u8)(operand + _cpu.Y);
 
-    return new(address, 0);
+    return new(address, 2);
   }
 
   public AddressingResult<u16> Absolute(u16 operand)
   {
-    return new(operand, 0);
+    return new(operand, 2);
   }
 
   public AddressingResult<u16> AbsoluteX(u16 operand)
@@ -39,7 +39,7 @@ public class Addressing(Bus bus, Emulator cpu)
     var address = (u16)(operand + _cpu.X);
     var extraCycle = HasPageCrossed(operand, address) ? 1 : 0;
 
-    return new(address, extraCycle);
+    return new(address, 2 + extraCycle);
   }
 
   public AddressingResult<u16> AbsoluteY(u16 operand)
@@ -47,7 +47,7 @@ public class Addressing(Bus bus, Emulator cpu)
     var address = (u16)(operand + _cpu.Y);
     var extraCycle = HasPageCrossed(operand, address) ? 1 : 0;
 
-    return new(address, extraCycle);
+    return new(address, 2 + extraCycle);
   }
 
   public AddressingResult<u16> IndexedIndirect(u8 operand)
@@ -57,7 +57,7 @@ public class Addressing(Bus bus, Emulator cpu)
 
     var address = CombineBytesToWord(lo, hi);
 
-    return new(address, 0);
+    return new(address, 4);
   }
 
   public AddressingResult<u16> IndirectIndexed(u8 operand)
@@ -69,7 +69,7 @@ public class Addressing(Bus bus, Emulator cpu)
     var address = (u16)(pointer + _cpu.Y);
     var extraCycle = HasPageCrossed(pointer, address) ? 1 : 0;
 
-    return new(address, extraCycle);
+    return new(address, 3 + extraCycle);
   }
 
   public AddressingResult<i8> Relative(u8 operand)
@@ -77,7 +77,7 @@ public class Addressing(Bus bus, Emulator cpu)
     return new((i8)operand, 0);
   }
 
-  private static bool HasPageCrossed(int a, int b)
+  internal static bool HasPageCrossed(int a, int b)
   {
     return (a >> 8) != (b >> 8);
   }
