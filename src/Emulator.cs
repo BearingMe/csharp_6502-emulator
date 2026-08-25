@@ -98,6 +98,13 @@ public class Emulator
       0xCA => DEX(),
       0x88 => DEY(),
 
+      // --- ASL ---
+      0x0A => ASL_accumulator(),
+      0x06 => ASL_zero_page(_cpu.FetchByte()),
+      0x16 => ASL_zero_page_x(_cpu.FetchByte()),
+      0x0E => ASL_absolute(_cpu.FetchWord()),
+      0x1E => ASL_absolute_x(_cpu.FetchWord()),
+
       // --- ADC ---
       0x69 => ADC_immediate(_cpu.FetchByte()),
       0x65 => ADC_zero_page(_cpu.FetchByte()),
@@ -541,6 +548,45 @@ public class Emulator
     var result = _instructions.DEY();
 
     return result.Cycles;
+  }
+
+  public cycle ASL_accumulator()
+  {
+    var result = _instructions.ASL();
+
+    return result.Cycles;
+  }
+
+  public cycle ASL_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _instructions.ASL(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ASL_zero_page_x(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPageX(operand);
+    var result = _instructions.ASL(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ASL_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.ASL(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ASL_absolute_x(u16 operand)
+  {
+    var addressMode = _addressing.AbsoluteX(operand);
+    var result = _instructions.ASL(addressMode.Value);
+
+    return 7;
   }
 
   public cycle ADC_immediate(u8 operand)

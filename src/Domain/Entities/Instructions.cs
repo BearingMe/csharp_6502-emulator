@@ -238,6 +238,29 @@ public class Instructions(Cpu cpu)
     return new(2);
   }
 
+  public InstructionResult ASL()
+  {
+    var result = (u8)(_cpu.A << 1);
+
+    SetFlag(Status.Carry, (_cpu.A & 0x80) != 0);
+    UpdateZNFlags(result);
+    _cpu.A = result;
+
+    return new(2);
+  }
+
+  public InstructionResult ASL(u16 address)
+  {
+    var value = _cpu.ReadByte(address);
+    var result = (u8)(value << 1);
+
+    SetFlag(Status.Carry, (value & 0x80) != 0);
+    UpdateZNFlags(result);
+    _cpu.WriteByte(address, result);
+
+    return new(4);
+  }
+
   private InstructionResult Branch(bool condition, i8 offset)
   {
     if (condition)
