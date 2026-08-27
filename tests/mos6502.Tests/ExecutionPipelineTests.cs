@@ -452,4 +452,101 @@ public class ExecutionPipelineTests
     cpu.PC.Should().Be(0x8005);
     cycles.Should().Be(7);
   }
+
+  [Fact]
+  public void Step_Pha_PushesAccumulatorAndAdvancesPcByOne()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA9, 0x33, // LDA #$33
+      0x48        // PHA
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x01FD).Should().Be(0x33);
+    cpu.StackPointer.Should().Be(0xFC);
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(3);
+  }
+
+  [Fact]
+  public void Step_Php_PushesStatusWithBreakAndUnusedBitsAndAdvancesPcByOne()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x08 // PHP
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x01FD).Should().Be((u8)(Status.Interrupt | Status.Break | Status.Unused));
+    cpu.StackPointer.Should().Be(0xFC);
+    cpu.PC.Should().Be(0x8001);
+    cycles.Should().Be(3);
+  }
+
+  [Fact]
+  public void Step_Pla_PullsAccumulatorAndAdvancesPcByOne()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x01FD, 0x77);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0xFC, // LDX #$FC
+      0x9A,       // TXS
+      0x68        // PLA
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.A.Should().Be(0x77);
+    cpu.StackPointer.Should().Be(0xFD);
+    cpu.PC.Should().Be(0x8004);
+    cycles.Should().Be(4);
+  }
+
+  [Fact]
+  public void Step_Plp_PullsStatusAndAdvancesPcByOne()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x01FD, (u8)(Status.Carry | Status.Zero));
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0xFC, // LDX #$FC
+      0x9A,       // TXS
+      0x28        // PLP
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.Status.HasFlag(Status.Carry).Should().BeTrue();
+    cpu.Status.HasFlag(Status.Zero).Should().BeTrue();
+    cpu.StackPointer.Should().Be(0xFD);
+    cpu.PC.Should().Be(0x8004);
+    cycles.Should().Be(4);
+  }
 }

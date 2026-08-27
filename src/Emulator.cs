@@ -90,6 +90,12 @@ public class Emulator
       0x9A => TXS(),
       0x98 => TYA(),
 
+      // --- Stack ---
+      0x48 => PHA(),
+      0x08 => PHP(),
+      0x68 => PLA(),
+      0x28 => PLP(),
+
       // --- Increments ---
       0xE8 => INX(),
       0xC8 => INY(),
@@ -543,6 +549,34 @@ public class Emulator
   public cycle TYA()
   {
     var result = _instructions.TYA();
+
+    return result.Cycles;
+  }
+
+  public cycle PHA()
+  {
+    var result = _instructions.PHA();
+
+    return result.Cycles;
+  }
+
+  public cycle PHP()
+  {
+    var result = _instructions.PHP();
+
+    return result.Cycles;
+  }
+
+  public cycle PLA()
+  {
+    var result = _instructions.PLA();
+
+    return result.Cycles;
+  }
+
+  public cycle PLP()
+  {
+    var result = _instructions.PLP();
 
     return result.Cycles;
   }

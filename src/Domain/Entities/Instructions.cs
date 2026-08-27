@@ -351,6 +351,45 @@ public class Instructions(Cpu cpu)
     return new(4);
   }
 
+  public InstructionResult PHA()
+  {
+    _cpu.WriteByte((u16)(0x0100 | _cpu.StackPointer), _cpu.A);
+    _cpu.StackPointer = (u8)(_cpu.StackPointer - 1);
+
+    return new(3);
+  }
+
+  public InstructionResult PHP()
+  {
+    _cpu.WriteByte((u16)(0x0100 | _cpu.StackPointer), (u8)(_cpu.Status | Status.Break | Status.Unused));
+    _cpu.StackPointer = (u8)(_cpu.StackPointer - 1);
+
+    return new(3);
+  }
+
+  public InstructionResult PLA()
+  {
+    _cpu.StackPointer = (u8)(_cpu.StackPointer + 1);
+    _cpu.A = _cpu.ReadByte((u16)(0x0100 | _cpu.StackPointer));
+
+    UpdateZNFlags(_cpu.A);
+
+    return new(4);
+  }
+
+  public InstructionResult PLP()
+  {
+    _cpu.StackPointer++;
+    var pulled = _cpu.ReadByte((u16)(0x0100 | _cpu.StackPointer));
+
+    var incomming = (Status)(pulled & 0b1100_1111);
+    var current = (Status)((u8)_cpu.Status & 0b0011_0000);
+
+    _cpu.Status = incomming | current;
+
+    return new(4);
+  }
+
   // private
   private InstructionResult Branch(bool condition, i8 offset)
   {
