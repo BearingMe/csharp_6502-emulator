@@ -1,5 +1,6 @@
 using mos6502.src.Domain.Objects;
 using mos6502.src.Domain.Enums;
+using Microsoft.VisualBasic;
 
 namespace mos6502.src.Domain.Entities;
 
@@ -284,6 +285,35 @@ public class Instructions(Cpu cpu)
     return new(4);
   }
 
+  public InstructionResult ROL()
+  {
+    var temp = (_cpu.A << 1) | (HasFlag(Status.Carry) ? 1 : 0);
+    var result = (u8)temp;
+
+    SetFlag(Status.Carry, (_cpu.A & 0x80) != 0);
+    UpdateZNFlags(result);
+
+    _cpu.A = result;
+
+    return new(2);
+  }
+
+  public InstructionResult ROL(u16 address)
+  {
+    var value = _cpu.ReadByte(address);
+
+    var temp = (value << 1) | (HasFlag(Status.Carry) ? 1 : 0);
+    var result = (u8)temp;
+
+    SetFlag(Status.Carry, (value & 0x80) != 0);
+    UpdateZNFlags(result);
+
+    _cpu.WriteByte(address, result);
+
+    return new(4);
+  }
+
+  // private
   private InstructionResult Branch(bool condition, i8 offset)
   {
     if (condition)

@@ -318,4 +318,50 @@ public class ExecutionPipelineTests
     cpu.PC.Should().Be(0x8005);
     cycles.Should().Be(7);
   }
+
+  [Fact]
+  public void Step_RolAccumulator_RotatesLeftAndReturnsTwoCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA9, 0x40, // LDA #$40
+      0x2A        // ROL A
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.A.Should().Be(0x80);
+    cpu.Status.HasFlag(Status.Negative).Should().BeTrue();
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(2);
+  }
+
+  [Fact]
+  public void Step_RolAbsoluteX_ModifiesMemoryAndReturnsSevenCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x2004, 0x03);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x04,       // LDX #$04
+      0x3E, 0x00, 0x20  // ROL $2000,X
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x2004).Should().Be(0x06);
+    cpu.PC.Should().Be(0x8005);
+    cycles.Should().Be(7);
+  }
 }
