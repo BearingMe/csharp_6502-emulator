@@ -107,6 +107,10 @@ public class Emulator
       // --- Decrements ---
       0xCA => DEX(),
       0x88 => DEY(),
+      0xC6 => DEC_zero_page(_cpu.FetchByte()),
+      0xD6 => DEC_zero_page_x(_cpu.FetchByte()),
+      0xCE => DEC_absolute(_cpu.FetchWord()),
+      0xDE => DEC_absolute_x(_cpu.FetchWord()),
 
       // --- ASL ---
       0x0A => ASL_accumulator(),
@@ -223,8 +227,20 @@ public class Emulator
       // --- Jumps ---
       0x4C => JMP_absolute(_cpu.FetchWord()),
       0x6C => JMP_indirect(_cpu.FetchWord()),
+      0x20 => JSR_absolute(_cpu.FetchWord()),
+
+      // --- Flag Changes ---
+      0x18 => CLC(),
+      0x38 => SEC(),
+      0x58 => CLI(),
+      0x78 => SEI(),
+      0xB8 => CLV(),
+      0xD8 => CLD(),
+      0xF8 => SED(),
 
       // --- System / Return ---
+      0xEA => NOP(),
+      0x00 => BRK(),
       0x40 => RTI(),
       0x60 => RTS(),
 
@@ -647,6 +663,38 @@ public class Emulator
     var result = _instructions.DEY();
 
     return result.Cycles;
+  }
+
+  public cycle DEC_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _instructions.DEC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle DEC_zero_page_x(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPageX(operand);
+    var result = _instructions.DEC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle DEC_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.DEC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle DEC_absolute_x(u16 operand)
+  {
+    var addressMode = _addressing.AbsoluteX(operand);
+    var result = _instructions.DEC(addressMode.Value);
+
+    return result.Cycles + 3; // the addressing mode has a fixed number of cycles for this instruction
   }
 
   public cycle ASL_accumulator()
@@ -1379,6 +1427,77 @@ public class Emulator
     var result = _instructions.JMP(addressMode.Value);
 
     return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle JSR_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.JSR(addressMode.Value);
+
+    return result.Cycles;
+  }
+
+  public cycle CLC()
+  {
+    var result = _instructions.CLC();
+
+    return result.Cycles;
+  }
+
+  public cycle SEC()
+  {
+    var result = _instructions.SEC();
+
+    return result.Cycles;
+  }
+
+  public cycle CLI()
+  {
+    var result = _instructions.CLI();
+
+    return result.Cycles;
+  }
+
+  public cycle SEI()
+  {
+    var result = _instructions.SEI();
+
+    return result.Cycles;
+  }
+
+  public cycle CLV()
+  {
+    var result = _instructions.CLV();
+
+    return result.Cycles;
+  }
+
+  public cycle CLD()
+  {
+    var result = _instructions.CLD();
+
+    return result.Cycles;
+  }
+
+  public cycle SED()
+  {
+    var result = _instructions.SED();
+
+    return result.Cycles;
+  }
+
+  public cycle NOP()
+  {
+    var result = _instructions.NOP();
+
+    return result.Cycles;
+  }
+
+  public cycle BRK()
+  {
+    var result = _instructions.BRK();
+
+    return result.Cycles;
   }
 
   public cycle RTI()

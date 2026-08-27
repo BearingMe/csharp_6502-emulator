@@ -688,4 +688,123 @@ public class ExecutionPipelineTests
     cpu.Status.HasFlag(Status.Zero).Should().BeTrue();
     cycles.Should().Be(6);
   }
+
+  [Fact]
+  public void Step_DecZeroPage_DecrementsMemoryAndReturnsFiveCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x0042, 0x05);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xC6, 0x42 // DEC $42
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x0042).Should().Be(0x04);
+    cpu.PC.Should().Be(0x8002);
+    cycles.Should().Be(5);
+  }
+
+  [Fact]
+  public void Step_DecAbsoluteX_DecrementsMemoryAndReturnsSevenCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x2004, 0x01);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x04,       // LDX #$04
+      0xDE, 0x00, 0x20  // DEC $2000,X
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x2004).Should().Be(0x00);
+    cpu.PC.Should().Be(0x8005);
+    cycles.Should().Be(7);
+  }
+
+  [Fact]
+  public void Step_JsrAndRts_ExecutesSubroutineAndReturns()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x20, 0x05, 0x80, // JSR $8005 (3 bytes, PC -> $8003 before jumping)
+      0xEA,             // NOP (target of RTS: $8003)
+      0xEA,             // NOP ($8004)
+      0xE8,             // Subroutine: INX ($8005)
+      0x60              // Subroutine: RTS ($8006)
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var jsrCycles = cpu.Step(); // JSR $8005
+    jsrCycles.Should().Be(6);
+    cpu.PC.Should().Be(0x8005);
+
+    var inxCycles = cpu.Step(); // INX
+    inxCycles.Should().Be(2);
+    cpu.X.Should().Be(0x01);
+
+    var rtsCycles = cpu.Step(); // RTS
+    rtsCycles.Should().Be(6);
+    cpu.PC.Should().Be(0x8003);
+
+    var nopCycles = cpu.Step(); // NOP at $8003
+    nopCycles.Should().Be(2);
+    cpu.PC.Should().Be(0x8004);
+  }
+
+  [Fact]
+  public void Step_Nop_AdvancesPcByOneAndReturnsTwoCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xEA // NOP
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x8001);
+    cycles.Should().Be(2);
+  }
+
+  [Fact]
+  public void Step_Brk_PushesFrameSetsInterruptFlagAndJumpsToVector_ReturningSevenCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0xFFFE, 0x00);
+    bus.WriteByte(0xFFFF, 0x90);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x00 // BRK
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x9000);
+    cpu.Status.HasFlag(Status.Interrupt).Should().BeTrue();
+    cycles.Should().Be(7);
+  }
 }
