@@ -549,4 +549,66 @@ public class ExecutionPipelineTests
     cpu.PC.Should().Be(0x8004);
     cycles.Should().Be(4);
   }
+
+  [Fact]
+  public void Step_JmpAbsolute_SetsProgramCounterAndReturnsThreeCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x4C, 0x50, 0x90 // JMP $9050
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x9050);
+    cycles.Should().Be(3);
+  }
+
+  [Fact]
+  public void Step_JmpIndirect_SetsProgramCounterAndReturnsFiveCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x1000, 0x50);
+    bus.WriteByte(0x1001, 0x90);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x6C, 0x00, 0x10 // JMP ($1000)
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x9050);
+    cycles.Should().Be(5);
+  }
+
+  [Fact]
+  public void Step_JmpIndirect_WithPageBoundaryBug_SetsProgramCounterAndReturnsFiveCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x10FF, 0x50);
+    bus.WriteByte(0x1000, 0x90);
+    bus.WriteByte(0x1100, 0x22); // CMOS high byte, ignored on NMOS
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0x6C, 0xFF, 0x10 // JMP ($10FF)
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x9050);
+    cycles.Should().Be(5);
+  }
 }

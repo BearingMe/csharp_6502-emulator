@@ -220,6 +220,10 @@ public class Emulator
       0x6E => ROR_absolute(_cpu.FetchWord()),
       0x7E => ROR_absolute_x(_cpu.FetchWord()),
 
+      // --- Jumps ---
+      0x4C => JMP_absolute(_cpu.FetchWord()),
+      0x6C => JMP_indirect(_cpu.FetchWord()),
+
       _ => throw new InvalidOperationException($"Unknown or unimplemented opcode: 0x{opcode:X2}")
     };
   }
@@ -1355,6 +1359,22 @@ public class Emulator
     var result = _instructions.ROR(addressMode.Value);
 
     return result.Cycles + 3; // the addressing mode has a fixed number of cycles for this instruction
+  }
+
+  public cycle JMP_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.JMP(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle JMP_indirect(u16 operand)
+  {
+    var addressMode = _addressing.Indirect(operand);
+    var result = _instructions.JMP(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
   }
 
   public void Reset()

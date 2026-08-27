@@ -78,6 +78,19 @@ public class Addressing(Cpu cpu)
     return new((i8)operand, 0);
   }
 
+  public AddressingResult<u16> Indirect(u16 operand)
+  {
+    var lo = _cpu.ReadByte(operand);
+    var hiAddress = (operand & 0x00FF) == 0x00FF
+      ? (u16)(operand & 0xFF00)
+      : (u16)(operand + 1);
+    var hi = _cpu.ReadByte(hiAddress);
+
+    var address = CombineBytesToWord(lo, hi);
+
+    return new(address, 4);
+  }
+
   internal static bool HasPageCrossed(int a, int b)
   {
     return (a >> 8) != (b >> 8);

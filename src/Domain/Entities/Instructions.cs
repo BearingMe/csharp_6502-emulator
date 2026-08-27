@@ -390,6 +390,13 @@ public class Instructions(Cpu cpu)
     return new(4);
   }
 
+  public InstructionResult JMP(u16 address)
+  {
+    _cpu.PC = address;
+
+    return new(1);
+  }
+
   // private
   private InstructionResult Branch(bool condition, i8 offset)
   {
