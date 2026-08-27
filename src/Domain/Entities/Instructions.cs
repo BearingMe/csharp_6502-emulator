@@ -419,6 +419,21 @@ public class Instructions(Cpu cpu)
     return new(6);
   }
 
+  public InstructionResult RTI()
+  {
+    var pulledStatus = _cpu.StackPop();
+    var loPC = _cpu.StackPop();
+    var hiPC = _cpu.StackPop();
+
+    var incomingStatus = (Status)(pulledStatus & ~(u8)(Status.Break | Status.Unused));
+    var currentStatus = _cpu.Status & (Status.Break | Status.Unused);
+
+    _cpu.Status = incomingStatus | currentStatus;
+    _cpu.PC = (u16)((hiPC << 8) | loPC);
+
+    return new(6);
+  }
+
   // private
   private InstructionResult Branch(bool condition, i8 offset)
   {

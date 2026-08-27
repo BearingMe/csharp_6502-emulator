@@ -224,6 +224,10 @@ public class Emulator
       0x4C => JMP_absolute(_cpu.FetchWord()),
       0x6C => JMP_indirect(_cpu.FetchWord()),
 
+      // --- System / Return ---
+      0x40 => RTI(),
+      0x60 => RTS(),
+
       _ => throw new InvalidOperationException($"Unknown or unimplemented opcode: 0x{opcode:X2}")
     };
   }
@@ -1375,6 +1379,20 @@ public class Emulator
     var result = _instructions.JMP(addressMode.Value);
 
     return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle RTI()
+  {
+    var result = _instructions.RTI();
+
+    return result.Cycles;
+  }
+
+  public cycle RTS()
+  {
+    var result = _instructions.RTS();
+
+    return result.Cycles;
   }
 
   public void Reset()

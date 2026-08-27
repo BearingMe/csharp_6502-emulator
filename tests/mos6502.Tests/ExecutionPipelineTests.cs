@@ -659,4 +659,33 @@ public class ExecutionPipelineTests
     cpu.PC.Should().Be(0x9050);
     cycles.Should().Be(5);
   }
+
+  [Fact]
+  public void Step_Rti_PullsStatusAndProgramCounterAndReturnsSixCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x01FB, (u8)(Status.Carry | Status.Zero));
+    bus.WriteByte(0x01FC, 0x20); // PC Low
+    bus.WriteByte(0x01FD, 0x40); // PC High
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0xFA, // LDX #$FA
+      0x9A,       // TXS
+      0x40        // RTI
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.PC.Should().Be(0x4020);
+    cpu.StackPointer.Should().Be(0xFD);
+    cpu.Status.HasFlag(Status.Carry).Should().BeTrue();
+    cpu.Status.HasFlag(Status.Zero).Should().BeTrue();
+    cycles.Should().Be(6);
+  }
 }
