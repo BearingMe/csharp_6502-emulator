@@ -353,24 +353,21 @@ public class Instructions(Cpu cpu)
 
   public InstructionResult PHA()
   {
-    _cpu.WriteByte((u16)(0x0100 | _cpu.StackPointer), _cpu.A);
-    _cpu.StackPointer = (u8)(_cpu.StackPointer - 1);
+    _cpu.StackPush(_cpu.A);
 
     return new(3);
   }
 
   public InstructionResult PHP()
   {
-    _cpu.WriteByte((u16)(0x0100 | _cpu.StackPointer), (u8)(_cpu.Status | Status.Break | Status.Unused));
-    _cpu.StackPointer = (u8)(_cpu.StackPointer - 1);
+    _cpu.StackPush((u8)(_cpu.Status | Status.Break | Status.Unused));
 
     return new(3);
   }
 
   public InstructionResult PLA()
   {
-    _cpu.StackPointer = (u8)(_cpu.StackPointer + 1);
-    _cpu.A = _cpu.ReadByte((u16)(0x0100 | _cpu.StackPointer));
+    _cpu.A = _cpu.StackPop();
 
     UpdateZNFlags(_cpu.A);
 
@@ -379,13 +376,12 @@ public class Instructions(Cpu cpu)
 
   public InstructionResult PLP()
   {
-    _cpu.StackPointer++;
-    var pulled = _cpu.ReadByte((u16)(0x0100 | _cpu.StackPointer));
+    var pulled = _cpu.StackPop();
 
-    var incomming = (Status)(pulled & 0b1100_1111);
-    var current = (Status)((u8)_cpu.Status & 0b0011_0000);
+    var incoming = (Status)(pulled & ~(u8)(Status.Break | Status.Unused));
+    var current = _cpu.Status & (Status.Break | Status.Unused);
 
-    _cpu.Status = incomming | current;
+    _cpu.Status = incoming | current;
 
     return new(4);
   }
@@ -395,6 +391,32 @@ public class Instructions(Cpu cpu)
     _cpu.PC = address;
 
     return new(1);
+  }
+
+  public InstructionResult JSR(u16 address)
+  {
+    var returnAddress = (u16)(_cpu.PC - 1);
+
+    var hi = (u8)(returnAddress >> 8);
+    var lo = (u8)returnAddress;
+
+    _cpu.StackPush(hi);
+    _cpu.StackPush(lo);
+
+    _cpu.PC = address;
+
+    return new(6);
+  }
+
+  public InstructionResult RTS()
+  {
+    var lo = _cpu.StackPop();
+    var hi = _cpu.StackPop();
+    var returnAddress = (u16)((hi << 8) | lo);
+
+    _cpu.PC = (u16)(returnAddress + 1);
+
+    return new(6);
   }
 
   // private
