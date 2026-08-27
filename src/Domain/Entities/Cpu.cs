@@ -57,4 +57,16 @@ public class Cpu
     PC += 2;
     return value;
   }
+
+  public void StackPush(u8 value)
+  {
+    WriteByte((u16)(0x0100 | StackPointer), value);
+    StackPointer = (u8)(StackPointer - 1);
+  }
+
+  public u8 StackPop()
+  {
+    StackPointer = (u8)(StackPointer + 1);
+    return ReadByte((u16)(0x0100 | StackPointer));
+  }
 }

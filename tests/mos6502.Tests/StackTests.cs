@@ -174,4 +174,62 @@ public class StackTests
     cpu.Y.Should().Be(0x20);
     cpu.Status.HasFlag(Status.Negative).Should().BeTrue();
   }
+
+  [Fact]
+  public void StackPush_WritesByteToPageOneAndDecrementsStackPointer()
+  {
+    var cpu = new Cpu();
+    var emulator = new Emulator(cpu);
+    emulator.LDX_immediate(0xFD);
+    emulator.TXS();
+
+    cpu.StackPush(0x88);
+
+    cpu.ReadByte(0x01FD).Should().Be(0x88);
+    cpu.StackPointer.Should().Be(0xFC);
+  }
+
+  [Fact]
+  public void StackPush_WrapsAtZeroToFF()
+  {
+    var cpu = new Cpu();
+    var emulator = new Emulator(cpu);
+    emulator.LDX_immediate(0x00);
+    emulator.TXS();
+
+    cpu.StackPush(0x12);
+
+    cpu.ReadByte(0x0100).Should().Be(0x12);
+    cpu.StackPointer.Should().Be(0xFF);
+  }
+
+  [Fact]
+  public void StackPop_IncrementsStackPointerAndReadsByteFromPageOne()
+  {
+    var cpu = new Cpu();
+    var emulator = new Emulator(cpu);
+    cpu.WriteByte(0x01FD, 0x99);
+    emulator.LDX_immediate(0xFC);
+    emulator.TXS();
+
+    var value = cpu.StackPop();
+
+    value.Should().Be(0x99);
+    cpu.StackPointer.Should().Be(0xFD);
+  }
+
+  [Fact]
+  public void StackPop_WrapsAtFFToZero()
+  {
+    var cpu = new Cpu();
+    var emulator = new Emulator(cpu);
+    cpu.WriteByte(0x0100, 0x44);
+    emulator.LDX_immediate(0xFF);
+    emulator.TXS();
+
+    var value = cpu.StackPop();
+
+    value.Should().Be(0x44);
+    cpu.StackPointer.Should().Be(0x00);
+  }
 }
