@@ -364,4 +364,92 @@ public class ExecutionPipelineTests
     cpu.PC.Should().Be(0x8005);
     cycles.Should().Be(7);
   }
+
+  [Fact]
+  public void Step_IncZeroPage_ModifiesMemoryAndReturnsFiveCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x0042, 0x05);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xE6, 0x42 // INC $42
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x0042).Should().Be(0x06);
+    cpu.PC.Should().Be(0x8002);
+    cycles.Should().Be(5);
+  }
+
+  [Fact]
+  public void Step_IncZeroPageX_ModifiesMemoryAndReturnsSixCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x0045, 0x10);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x05, // LDX #$05
+      0xF6, 0x40  // INC $40,X
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x0045).Should().Be(0x11);
+    cpu.PC.Should().Be(0x8004);
+    cycles.Should().Be(6);
+  }
+
+  [Fact]
+  public void Step_IncAbsolute_ModifiesMemoryAndReturnsSixCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x2000, 0x20);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xEE, 0x00, 0x20 // INC $2000
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x2000).Should().Be(0x21);
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(6);
+  }
+
+  [Fact]
+  public void Step_IncAbsoluteX_ModifiesMemoryAndReturnsSevenCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x2004, 0x09);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x04,       // LDX #$04
+      0xFE, 0x00, 0x20  // INC $2000,X
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x2004).Should().Be(0x0A);
+    cpu.PC.Should().Be(0x8005);
+    cycles.Should().Be(7);
+  }
 }

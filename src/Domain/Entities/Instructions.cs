@@ -1,6 +1,5 @@
 using mos6502.src.Domain.Objects;
 using mos6502.src.Domain.Enums;
-using Microsoft.VisualBasic;
 
 namespace mos6502.src.Domain.Entities;
 
@@ -114,6 +113,17 @@ public class Instructions(Cpu cpu)
     UpdateZNFlags(_cpu.Y);
 
     return new(2);
+  }
+
+  public InstructionResult INC(u16 address)
+  {
+    var value = _cpu.ReadByte(address);
+    var result = (u8)(value + 1);
+
+    UpdateZNFlags(result);
+    _cpu.WriteByte(address, result);
+
+    return new(4);
   }
 
   public InstructionResult ADC(u8 value)

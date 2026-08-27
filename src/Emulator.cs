@@ -93,6 +93,10 @@ public class Emulator
       // --- Increments ---
       0xE8 => INX(),
       0xC8 => INY(),
+      0xE6 => INC_zero_page(_cpu.FetchByte()),
+      0xF6 => INC_zero_page_x(_cpu.FetchByte()),
+      0xEE => INC_absolute(_cpu.FetchWord()),
+      0xFE => INC_absolute_x(_cpu.FetchWord()),
 
       // --- Decrements ---
       0xCA => DEX(),
@@ -555,6 +559,38 @@ public class Emulator
     var result = _instructions.INY();
 
     return result.Cycles;
+  }
+
+  public cycle INC_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _instructions.INC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle INC_zero_page_x(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPageX(operand);
+    var result = _instructions.INC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle INC_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.INC(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle INC_absolute_x(u16 operand)
+  {
+    var addressMode = _addressing.AbsoluteX(operand);
+    var result = _instructions.INC(addressMode.Value);
+
+    return result.Cycles + 3; // the addressing mode has a fixed number of cycles for this instruction
   }
 
   public cycle DEX()
