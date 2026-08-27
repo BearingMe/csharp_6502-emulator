@@ -313,6 +313,34 @@ public class Instructions(Cpu cpu)
     return new(4);
   }
 
+  public InstructionResult ROR()
+  {
+    var temp = (_cpu.A >> 1) | (HasFlag(Status.Carry) ? 0x80 : 0);
+    var result = (u8)temp;
+
+    SetFlag(Status.Carry, (_cpu.A & 0x01) != 0);
+    UpdateZNFlags(result);
+
+    _cpu.A = result;
+
+    return new(2);
+  }
+
+  public InstructionResult ROR(u16 address)
+  {
+    var value = _cpu.ReadByte(address);
+
+    var temp = (value >> 1) | (HasFlag(Status.Carry) ? 0x80 : 0);
+    var result = (u8)temp;
+
+    SetFlag(Status.Carry, (value & 0x01) != 0);
+    UpdateZNFlags(result);
+
+    _cpu.WriteByte(address, result);
+
+    return new(4);
+  }
+
   // private
   private InstructionResult Branch(bool condition, i8 offset)
   {

@@ -203,6 +203,13 @@ public class Emulator
       0x2E => ROL_absolute(_cpu.FetchWord()),
       0x3E => ROL_absolute_x(_cpu.FetchWord()),
 
+      // --- ROR ---
+      0x6A => ROR_accumulator(),
+      0x66 => ROR_zero_page(_cpu.FetchByte()),
+      0x76 => ROR_zero_page_x(_cpu.FetchByte()),
+      0x6E => ROR_absolute(_cpu.FetchWord()),
+      0x7E => ROR_absolute_x(_cpu.FetchWord()),
+
       _ => throw new InvalidOperationException($"Unknown or unimplemented opcode: 0x{opcode:X2}")
     };
   }
@@ -1237,6 +1244,45 @@ public class Emulator
   {
     var addressMode = _addressing.AbsoluteX(operand);
     var result = _instructions.ROL(addressMode.Value);
+
+    return result.Cycles + 3; // the addressing mode has a fixed number of cycles for this instruction
+  }
+
+  public cycle ROR_accumulator()
+  {
+    var result = _instructions.ROR();
+
+    return result.Cycles;
+  }
+
+  public cycle ROR_zero_page(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPage(operand);
+    var result = _instructions.ROR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ROR_zero_page_x(u8 operand)
+  {
+    var addressMode = _addressing.ZeroPageX(operand);
+    var result = _instructions.ROR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ROR_absolute(u16 operand)
+  {
+    var addressMode = _addressing.Absolute(operand);
+    var result = _instructions.ROR(addressMode.Value);
+
+    return result.Cycles + addressMode.Cycles;
+  }
+
+  public cycle ROR_absolute_x(u16 operand)
+  {
+    var addressMode = _addressing.AbsoluteX(operand);
+    var result = _instructions.ROR(addressMode.Value);
 
     return result.Cycles + 3; // the addressing mode has a fixed number of cycles for this instruction
   }
