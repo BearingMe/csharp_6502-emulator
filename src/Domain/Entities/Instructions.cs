@@ -126,6 +126,88 @@ public class Instructions(Cpu cpu)
     return new(4);
   }
 
+  public InstructionResult DEC(u16 address)
+  {
+    var value = _cpu.ReadByte(address);
+    var result = (u8)(value - 1);
+
+    UpdateZNFlags(result);
+    _cpu.WriteByte(address, result);
+
+    return new(4);
+  }
+
+  public InstructionResult CLC()
+  {
+    SetFlag(Status.Carry, false);
+
+    return new(2);
+  }
+
+  public InstructionResult SEC()
+  {
+    SetFlag(Status.Carry, true);
+
+    return new(2);
+  }
+
+  public InstructionResult CLI()
+  {
+    SetFlag(Status.Interrupt, false);
+
+    return new(2);
+  }
+
+  public InstructionResult SEI()
+  {
+    SetFlag(Status.Interrupt, true);
+
+    return new(2);
+  }
+
+  public InstructionResult CLV()
+  {
+    SetFlag(Status.Overflow, false);
+
+    return new(2);
+  }
+
+  public InstructionResult CLD()
+  {
+    SetFlag(Status.Decimal, false);
+
+    return new(2);
+  }
+
+  public InstructionResult SED()
+  {
+    SetFlag(Status.Decimal, true);
+
+    return new(2);
+  }
+
+  public InstructionResult NOP()
+  {
+    return new(2);
+  }
+
+  public InstructionResult BRK()
+  {
+    var returnAddress = (u16)(_cpu.PC + 1);
+
+    var hi = (u8)(returnAddress >> 8);
+    var lo = (u8)returnAddress;
+
+    _cpu.StackPush(hi);
+    _cpu.StackPush(lo);
+    _cpu.StackPush((u8)(_cpu.Status | Status.Break | Status.Unused));
+
+    SetFlag(Status.Interrupt, true);
+    _cpu.PC = _cpu.ReadWord(0xFFFE);
+
+    return new(7);
+  }
+
   public InstructionResult ADC(u8 value)
   {
     var tempInt = _cpu.A + value + (HasFlag(Status.Carry) ? 1 : 0);
