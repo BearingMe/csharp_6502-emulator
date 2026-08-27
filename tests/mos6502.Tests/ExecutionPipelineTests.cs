@@ -366,6 +366,54 @@ public class ExecutionPipelineTests
   }
 
   [Fact]
+  public void Step_RorAccumulator_RotatesRightAndReturnsTwoCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA9, 0x03, // LDA #$03
+      0x6A        // ROR A
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    cpu.A.Should().Be(0x01);
+    cpu.Status.HasFlag(Status.Carry).Should().BeTrue();
+    cpu.Status.HasFlag(Status.Negative).Should().BeFalse();
+    cpu.PC.Should().Be(0x8003);
+    cycles.Should().Be(2);
+  }
+
+  [Fact]
+  public void Step_RorAbsoluteX_ModifiesMemoryAndReturnsSevenCycles()
+  {
+    var bus = new Bus();
+    bus.WriteByte(0xFFFC, 0x00);
+    bus.WriteByte(0xFFFD, 0x80);
+    bus.WriteByte(0x2004, 0x05);
+    var cpu = new Emulator(bus);
+    byte[] program =
+    [
+      0xA2, 0x04,       // LDX #$04
+      0x7E, 0x00, 0x20  // ROR $2000,X
+    ];
+    cpu.LoadRom(program, 0x8000);
+
+    cpu.Step();
+    var cycles = cpu.Step();
+
+    bus.ReadByte(0x2004).Should().Be(0x02);
+    cpu.Status.HasFlag(Status.Carry).Should().BeTrue();
+    cpu.PC.Should().Be(0x8005);
+    cycles.Should().Be(7);
+  }
+
+  [Fact]
   public void Step_IncZeroPage_ModifiesMemoryAndReturnsFiveCycles()
   {
     var bus = new Bus();

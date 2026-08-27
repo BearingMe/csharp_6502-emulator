@@ -19,11 +19,13 @@ public class JmpTests
   {
     var bus = new Bus();
     var cpu = new Emulator(bus);
-    cpu.LDA_immediate(0x00); // sets Zero flag
+    cpu.LDA_immediate(0xFF);
+    cpu.ADC_immediate(0x80); // sets Carry and Negative flags
 
+    var flagsBefore = cpu.Status;
     cpu.JMP_absolute(0x1234);
 
-    cpu.Status.Should().Be(Status.Interrupt | Status.Zero);
+    cpu.Status.Should().Be(flagsBefore);
   }
 
   [Fact]
@@ -80,10 +82,12 @@ public class JmpTests
     bus.WriteByte(0x2000, 0x00);
     bus.WriteByte(0x2001, 0x30);
     var cpu = new Emulator(bus);
-    cpu.LDA_immediate(0x80); // sets Negative flag
+    cpu.LDA_immediate(0xFF);
+    cpu.ADC_immediate(0x80); // sets Carry and Negative flags
 
+    var flagsBefore = cpu.Status;
     cpu.JMP_indirect(0x2000);
 
-    cpu.Status.HasFlag(Status.Negative).Should().BeTrue();
+    cpu.Status.Should().Be(flagsBefore);
   }
 }
