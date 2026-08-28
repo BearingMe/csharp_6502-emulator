@@ -1,7 +1,7 @@
-namespace mos6502.src.Domain.Enums;
+namespace Mos6502.Domain.Enums;
 
 [Flags]
-public enum Status : u8
+public enum Status : byte
 {
   Carry = 1 << 0,
   Zero = 1 << 1,
@@ -10,5 +10,5 @@ public enum Status : u8
   Break = 1 << 4,
   Unused = 1 << 5,
   Overflow = 1 << 6,
-  Negative = 1 << 7
+  Negative = 1 << 7,
 }

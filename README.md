@@ -23,23 +23,26 @@ This project is a study implementation of the classic 8-bit MOS Technology 6502 
 
 ## Architecture
 
-The project follows a layered Domain-Driven Design layout:
+The project follows a clean Domain, Application, and Infrastructure layout:
 
 ```
 src/
 ├── Application/
 │   └── Emulator.cs             # Application service: orchestration, program loading & step cycle
-└── Domain/
-    ├── Entities/
-    │   ├── Bus.cs              # 64 KiB memory bus
-    │   └── Cpu.cs              # 6502 registers, flags, and instruction implementations
-    ├── Enums/
-    │   ├── AddressingModes.cs  # 6502 addressing mode definitions
-    │   └── Status.cs           # Status flags (Carry, Zero, Interrupt, Decimal, Break, Overflow, Negative)
-    └── Objects/
-        ├── Instruction.cs      # Instruction value object (Opcode, Operand)
-        ├── Unassigned8Bits.cs  # Fixed-width 8-bit value type wrapper
-        └── Unassigned16Bits.cs # Fixed-width 16-bit address value type wrapper
+├── Domain/
+│   ├── Entities/
+│   │   ├── Addressing.cs       # 6502 addressing mode calculations
+│   │   ├── Bus.cs              # 64 KiB memory bus
+│   │   ├── Cpu.cs              # 6502 registers and flags state
+│   │   └── Instructions.cs     # 6502 instruction execution logic
+│   ├── Enums/
+│   │   └── Status.cs           # Status flags (Carry, Zero, Interrupt, Decimal, Break, Overflow, Negative)
+│   └── Objects/
+│       ├── AddressingResult.cs # Result container for addressing calculations
+│       └── InstructionResult.cs# Result container for instruction cycles
+└── Infrastructure/
+    └── Cli/
+        └── Program.cs          # Functional test runner console host
 ```
 
 ## Building and Testing

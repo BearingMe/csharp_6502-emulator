@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\mos6502.csproj" />
+    <ProjectReference Include="..\..\src\mos6502.csproj" />
   </ItemGroup>
 
 </Project>

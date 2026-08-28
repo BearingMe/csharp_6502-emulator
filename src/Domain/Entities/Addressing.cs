@@ -1,34 +1,11 @@
-using mos6502.src.Domain.Objects;
+using Mos6502.Domain.Objects;
 
-namespace mos6502.src.Domain.Entities;
+namespace Mos6502.Domain.Entities;
 
-public class Addressing(Cpu cpu)
+public class Addressing(Cpu cpu, Bus bus)
 {
   private readonly Cpu _cpu = cpu;
-
-  public AddressingResult<u8> Immediate(u8 operand)
-  {
-    return new(operand, 0);
-  }
-
-  public AddressingResult<u16> ZeroPage(u8 operand)
-  {
-    return new(operand, 1);
-  }
-
-  public AddressingResult<u16> ZeroPageX(u8 operand)
-  {
-    var address = (u8)(operand + _cpu.X);
-
-    return new(address, 2);
-  }
-
-  public AddressingResult<u16> ZeroPageY(u8 operand)
-  {
-    var address = (u8)(operand + _cpu.Y);
-
-    return new(address, 2);
-  }
+  private readonly Bus _bus = bus;
 
   public AddressingResult<u16> Absolute(u16 operand)
   {
@@ -51,10 +28,28 @@ public class Addressing(Cpu cpu)
     return new(address, 2 + extraCycle);
   }
 
+  public AddressingResult<u8> Immediate(u8 operand)
+  {
+    return new(operand, 0);
+  }
+
   public AddressingResult<u16> IndexedIndirect(u8 operand)
   {
-    var lo = _cpu.ReadByte((u8)(operand + _cpu.X));
-    var hi = _cpu.ReadByte((u8)(operand + _cpu.X + 1));
+    var lo = _bus.ReadByte((u8)(operand + _cpu.X));
+    var hi = _bus.ReadByte((u8)(operand + _cpu.X + 1));
+
+    var address = CombineBytesToWord(lo, hi);
+
+    return new(address, 4);
+  }
+
+  public AddressingResult<u16> Indirect(u16 operand)
+  {
+    var lo = _bus.ReadByte(operand);
+    var hiAddress = (operand & 0x00FF) == 0x00FF
+      ? (u16)(operand & 0xFF00)
+      : (u16)(operand + 1);
+    var hi = _bus.ReadByte(hiAddress);
 
     var address = CombineBytesToWord(lo, hi);
 
@@ -63,8 +58,8 @@ public class Addressing(Cpu cpu)
 
   public AddressingResult<u16> IndirectIndexed(u8 operand)
   {
-    var lo = _cpu.ReadByte(operand);
-    var hi = _cpu.ReadByte((u8)(operand + 1));
+    var lo = _bus.ReadByte(operand);
+    var hi = _bus.ReadByte((u8)(operand + 1));
 
     var pointer = CombineBytesToWord(lo, hi);
     var address = (u16)(pointer + _cpu.Y);
@@ -78,17 +73,23 @@ public class Addressing(Cpu cpu)
     return new((i8)operand, 0);
   }
 
-  public AddressingResult<u16> Indirect(u16 operand)
+  public AddressingResult<u16> ZeroPage(u8 operand)
   {
-    var lo = _cpu.ReadByte(operand);
-    var hiAddress = (operand & 0x00FF) == 0x00FF
-      ? (u16)(operand & 0xFF00)
-      : (u16)(operand + 1);
-    var hi = _cpu.ReadByte(hiAddress);
+    return new(operand, 1);
+  }
 
-    var address = CombineBytesToWord(lo, hi);
+  public AddressingResult<u16> ZeroPageX(u8 operand)
+  {
+    var address = (u8)(operand + _cpu.X);
 
-    return new(address, 4);
+    return new(address, 2);
+  }
+
+  public AddressingResult<u16> ZeroPageY(u8 operand)
+  {
+    var address = (u8)(operand + _cpu.Y);
+
+    return new(address, 2);
   }
 
   internal static bool HasPageCrossed(int a, int b)
