@@ -2,12 +2,12 @@
 
 ## Stack
 
-- **Framework**: xUnit
-- **Assertions**: FluentAssertions
-- **Mocking**: No mocking framework. Use real CPU, bus, memory, and other lightweight domain objects.
+- **Framework**: xUnit (`2.9.3`)
+- **Assertions**: FluentAssertions (`8.10.0`)
+- **Mocking**: No mocking frameworks. Tests use real lightweight `Bus`, `Cpu`, `Addressing`, `Instructions`, and `Emulator` instances.
 - **Target**: .NET 10 (`net10.0`)
 
-See `AGENTS.md` for test commands.
+See `AGENTS.md` for test execution commands.
 
 ---
 
@@ -20,52 +20,116 @@ They must be:
 - **Minimal**: contain only what is necessary to express the behavior.
 - **Human-readable**: a reader should understand the scenario and expected result immediately.
 - **Specification-driven**: test what the 6502 is required to do, not how the emulator happens to implement it.
-- **Deterministic**: the same input must always produce the same result.
-- **Independent**: tests must not depend on execution order or shared mutable state.
-- **Direct**: avoid unnecessary helpers, fixtures, abstractions, and indirection.
+- **Deterministic**: identical inputs produce identical results.
+- **Independent**: tests must not share mutable state or depend on execution order.
+- **Direct**: avoid unnecessary fixtures, builders, base classes, or indirection.
 
-Prefer a few repeated lines over a helper that hides important behavior.
+Prefer readable repetition over helpers that obscure important setup or assertions.
 
-Do not organize tests around implementation details merely to mirror the source code.
+---
+
+## Test Organization & Hierarchy
+
+Tests are placed in `tests/mos6502.Tests/` and strictly mirror the `src/` directory layout:
+
+```
+tests/mos6502.Tests/
+├── Domain/
+│   └── Entities/
+│       ├── AddressingEntity/
+│       │   └── AddressingTests.cs           # Addressing calculations & page boundary crossings
+│       ├── BusEntity/
+│       │   └── BusTests.cs                  # Memory read/write and 16-bit word handling
+│       ├── CpuEntity/
+│       │   └── CpuTests.cs                  # Register initialization & Reset state
+│       └── InstructionsEntity/
+│           ├── AdcTests.cs                  # Opcode-specific instruction tests
+│           ├── SbcTests.cs
+│           ├── LdaTests.cs
+│           ├── StaTests.cs
+│           └── ... (one per instruction family)
+└── Application/
+    └── Emulator/
+        ├── ExecutionPipelineTests.cs        # Opcode fetch/decode/execute dispatch via Step()
+        └── Functional/
+            ├── FunctionalArithmeticStackPipelineTests.cs # Multi-instruction workflows
+            ├── FunctionalBranchingLoopTests.cs
+            ├── FunctionalIndexedIndirectAddressingTests.cs
+            ├── FunctionalIndirectJmpPageWrapTests.cs
+            ├── FunctionalInterruptLifecycleTests.cs
+            ├── FunctionalPageCrossingBranchTests.cs
+            └── FunctionalSubroutineLifecycleTests.cs
+```
 
 ---
 
 ## Test Levels
 
-### Unit Tests
+### 1. Domain Unit Tests (`tests/mos6502.Tests/Domain/Entities/`)
 
-Test CPU behavior in isolation using real domain objects.
+Test domain components in isolation using real domain entities:
 
-Cover:
+- **Addressing Tests**: Verify effective address computation, zero page wrap-around, and cycle penalties for page crossings (`AbsoluteX`, `AbsoluteY`, `IndirectIndexed`, `Indirect`).
+- **Instruction Tests**: Verify ALU arithmetic, boolean operations, shifts, status flags, and cycle counts for individual instruction modes (e.g. `AdcImmediate`, `SbcAbsolute`).
+- **Bus & CPU Tests**: Verify memory bounds, 16-bit word byte order, register state, and reset vector handling.
 
-- Instruction behavior
-- Addressing modes
-- Registers
-- Status flags
-- Memory behavior
-- Program counter and stack behavior
-- Instruction timing when observable through the specification
+Example unit test:
 
-Tests should exercise behavior through the public domain API rather than internal implementation details.
+```csharp
+[Fact]
+public void Adc_Immediate_AddsWithCarryAndSetsFlags()
+{
+  var bus = new Bus();
+  var cpu = new Emulator(bus);
+  cpu.A = 0x20;
 
-### Functional Tests
+  var cycles = cpu.AdcImmediate(0x15);
 
-Execute complete 6502 programs against the emulator.
+  cpu.A.Should().Be(0x35);
+  cpu.Status.HasFlag(Status.Carry).Should().BeFalse();
+  cpu.Status.HasFlag(Status.Zero).Should().BeFalse();
+  cycles.Should().Be(2);
+}
+```
 
-Use these to verify that independently correct instructions, addressing modes, memory, flags, and control flow work together correctly.
+### 2. Application Pipeline Tests (`tests/mos6502.Tests/Application/Emulator/`)
 
-Examples include the Klaus Dormann 6502 functional test suite.
+Verify that `Emulator.Step()` fetches the opcode from memory at `PC`, increments `PC`, dispatches to the correct instruction handler, and returns the total cycle count for that step.
 
-### E2E Tests
+Example pipeline test:
 
-Verify application-level behavior such as:
+```csharp
+[Fact]
+public void Step_LdaImmediate_AdvancesPcAndReturnsCycles()
+{
+  var bus = new Bus();
+  var emulator = new Emulator(bus);
+  emulator.LoadRom([0xA9, 0x42], 0x8000);
+  emulator.PC = 0x8000;
 
-- CLI execution
-- Binary loading
-- ROM loading
-- Application entry points
+  var cycles = emulator.Step();
 
-Keep these separate from domain tests.
+  emulator.A.Should().Be(0x42);
+  emulator.PC.Should().Be(0x8002);
+  cycles.Should().Be(2);
+}
+```
+
+### 3. Multi-Instruction Functional Tests (`tests/mos6502.Tests/Application/Emulator/Functional/`)
+
+Verify full multi-instruction sequences running consecutively through `Emulator.Step()`. These test complex interactions such as:
+- Subroutine lifecycles (`JSR` → stack push → execution → `RTS` → stack pop → return address continuation).
+- Interrupt lifecycles (`BRK` / IRQ → status push → vector jump → `RTI` return).
+- Loops with conditional branches and accumulator decrementing.
+- Indexed indirect memory pointer pipelines.
+
+### 4. Binary Functional ROM Runner (`src/Infrastructure/Cli/Program.cs`)
+
+Executes complete binary test ROMs (such as `nestest.nes`) loaded into 64 KiB RAM. Run via:
+
+```bash
+dotnet run --project src/mos6502.csproj
+```
 
 ---
 
@@ -73,241 +137,93 @@ Keep these separate from domain tests.
 
 ### Naming
 
-Names should describe the behavior being specified:
+Test method names describe the operation, scenario, and expected observable behavior:
 
 `[Operation]_[Scenario]_[ExpectedBehavior]`
 
 Examples:
 
 ```csharp
-Lda_Immediate_LoadsAccumulator
-Adc_WithCarry_SetsCarryFlag
-Jmp_Absolute_SetsProgramCounter
+Adc_Immediate_AddsValuesWithoutCarry
+Sbc_SubtractsValues_AndUpdatesFlags_WithInitialCarry
+Jmp_Indirect_WrapsAddressAcrossPageBoundary
+Sta_AbsoluteX_AppliesXOffsetAndWritesToMemory
 ```
-
-Avoid names such as:
-
-```csharp
-TestLda()
-ExecuteInstruction()
-TestCase1()
-```
-
-A failed test name should explain what behavior is broken.
-
-### Test Structure
-
-Keep the test itself obvious.
-
-```csharp
-[Fact]
-public void Lda_Immediate_LoadsAccumulator()
-{
-    cpu.Load(0xA9, 0x42);
-
-    cpu.Step();
-
-    cpu.A.Should().Be(0x42);
-}
-```
-
-Do not require explicit `// Arrange`, `// Act`, and `// Assert` comments. The code should make those phases obvious.
-
-Do not extract setup into helpers unless the helper removes substantial noise without hiding the scenario.
 
 ### Assertions
 
-Assert the observable behavior required by the specification.
+Assert all relevant observable state affected by the behavior under test:
 
-An instruction may legitimately require several assertions:
+- Result registers (`A`, `X`, `Y`, `PC`, `StackPointer`)
+- Modified status flags (`Carry`, `Zero`, `Overflow`, `Negative`, `Interrupt`, etc.)
+- Memory contents at target addresses
+- Returned cycle counts
 
 ```csharp
 [Fact]
-public void Adc_SetsResultAndFlags()
+public void Sbc_ZeroPage_ReadsOperandAndReturnsThreeCycles()
 {
-    cpu.A = 0xFF;
-    cpu.Load(0x69, 0x01);
+  var bus = new Bus();
+  bus.WriteByte(0x0042, 0x15);
+  var cpu = new Emulator(bus);
+  cpu.LdaImmediate(0xFF);
+  cpu.AdcImmediate(0x01); // Set Carry flag
+  cpu.LdaImmediate(0x35);
 
-    cpu.Step();
+  var cycles = cpu.SbcZeroPage(0x42);
 
-    cpu.A.Should().Be(0x00);
-    cpu.Status.Should().HaveFlag(Status.Carry);
-    cpu.Status.Should().HaveFlag(Status.Zero);
+  cpu.A.Should().Be(0x20);
+  cycles.Should().Be(3);
 }
 ```
-
-Do not assert internal implementation details, private state, call sequences, or incidental memory accesses unless the 6502 specification explicitly makes them observable.
-
-### State
-
-Initialize only the state relevant to the scenario.
-
-Do not reset every register and every byte of memory in every test if the behavior being tested does not depend on them.
-
-When unspecified state matters to correctness, initialize it explicitly so the test documents the assumption.
 
 ---
 
 ## Data-Driven Tests
 
-Use `[Theory]` when several inputs exercise the **same specified behavior**.
-
-Prefer `[InlineData]` for small datasets:
+Use `[Theory]` with `[InlineData]` when multiple inputs test the same rule:
 
 ```csharp
 [Theory]
-[InlineData(0x00, true)]
-[InlineData(0x01, false)]
-[InlineData(0x80, false)]
-public void Lda_SetsZeroFlagCorrectly(byte value, bool expected)
+[InlineData(0x50, 0x10, 0x40, true, false, false, false)]
+[InlineData(0x50, 0x50, 0x00, true, true, false, false)]
+[InlineData(0x50, 0x70, 0xE0, false, false, true, false)]
+[InlineData(0x50, 0x90, 0xC0, false, false, true, true)]
+[InlineData(0xD0, 0x70, 0x60, true, false, false, true)]
+public void Sbc_SubtractsValues_AndUpdatesFlags_WithInitialCarry(
+  u8 initialA,
+  u8 operand,
+  u8 expectedA,
+  bool carry,
+  bool zero,
+  bool negative,
+  bool overflow)
 {
-    cpu.Load(0xA9, value);
+  var bus = new Bus();
+  var cpu = new Emulator(bus);
+  cpu.LdaImmediate(0xFF);
+  cpu.AdcImmediate(0x01); // Set Carry flag
 
-    cpu.Step();
+  cpu.LdaImmediate(initialA);
+  var cycles = cpu.SbcImmediate(operand);
 
-    cpu.Status.HasFlag(Status.Zero).Should().Be(expected);
+  cpu.A.Should().Be(expectedA);
+  cpu.Status.HasFlag(Status.Carry).Should().Be(carry);
+  cpu.Status.HasFlag(Status.Zero).Should().Be(zero);
+  cpu.Status.HasFlag(Status.Negative).Should().Be(negative);
+  cpu.Status.HasFlag(Status.Overflow).Should().Be(overflow);
+  cycles.Should().Be(2);
 }
 ```
-
-Do not force unrelated scenarios into one theory merely to reduce lines.
-
-Prefer separate `[Fact]` tests when each case describes a different rule.
-
-Use `MemberData` or `ClassData` only when the data cannot remain clear with `InlineData`.
-
----
-
-## 6502 Specification Coverage
-
-Instructions should be tested against the behavior defined by the 6502 specification.
-
-Where an instruction supports multiple addressing modes, cover the relevant addressing modes.
-
-Tests should verify:
-
-- Resulting values
-- Required status flags
-- Program counter changes
-- Stack effects
-- Memory effects
-- Page crossing behavior where applicable
-- Branch behavior
-- Cycle counts when exposed by the emulator's contract
-- Read-modify-write behavior where required
-
-Do not create tests for every possible combination blindly.
-
-Choose cases that demonstrate the actual rules and edge cases of the specification.
-
-For example, arithmetic instructions should include cases that exercise carry, zero, overflow, and negative behavior rather than merely repeating ordinary values.
-
----
-
-## Test Data
-
-Use explicit hexadecimal values for 6502 values when they improve readability:
-
-```csharp
-0xA9
-0xFF
-0x8000
-0x00FD
-```
-
-Do not introduce constants for a value used once simply to give it a name.
-
-Use constants when a value is reused or its meaning would otherwise be unclear.
-
-Test data should make the 6502 behavior recognizable without requiring conversion from decimal.
 
 ---
 
 ## What Not to Test
 
 Do not test:
+- .NET standard library or C# runtime behaviors.
+- Trivial auto-properties without custom logic.
+- Private internal fields or method call order.
+- Mock objects or simulated interfaces.
 
-- C# runtime behavior
-- Framework behavior
-- Library internals
-- Trivial auto-properties
-- Private implementation details
-- Internal method call structure
-- Mock interactions
-- Incidental implementation choices
-
-Do not mock CPU state, registers, memory, or other core emulator components.
-
-Use real lightweight domain objects.
-
----
-
-## Fixtures and Helpers
-
-Avoid fixtures and helpers for ordinary CPU setup.
-
-Prefer:
-
-```csharp
-var cpu = new Cpu(memory);
-cpu.A = 0x10;
-cpu.Load(0x69, 0x20);
-```
-
-over:
-
-```csharp
-var cpu = CreateInitializedCpuWithProgram(0x69, 0x20);
-```
-
-The latter hides information that is important to understanding the test.
-
-Use fixtures only for genuinely expensive shared resources, such as functional-test environments or external infrastructure.
-
----
-
-## Functional Test Fixtures
-
-Binary ROM and program fixtures belong in the functional test environment.
-
-Keep reusable ROMs under:
-
-`tests/Fixtures/Roms/`
-
-Functional tests should verify complete programs rather than duplicating every instruction-level assertion already covered by unit tests.
-
----
-
-## Determinism
-
-CPU tests must be deterministic.
-
-Do not use:
-
-- Random values without a fixed seed
-- System time
-- External services
-- Network access
-- Uncontrolled concurrency
-- Environment-dependent behavior
-
-An intermittent CPU test failure should normally indicate a bug in the emulator or test setup, not an unreliable test environment.
-
----
-
-## Coverage
-
-Coverage is a signal, not the goal.
-
-The important requirement is that the 6502 specification is meaningfully covered, including edge cases and instruction behavior.
-
-Do not add tests solely to increase a coverage percentage.
-
-Run coverage with:
-
-```bash
-dotnet test --collect:"XPlat Code Coverage"
-```
-
-100% coverage of a method does not guarantee correct emulation. A test can execute every branch while completely missing an important 6502 rule.
-
-Correctness against the specification takes priority over coverage numbers.
+Always test observable MOS 6502 behavior through the public domain and application APIs.

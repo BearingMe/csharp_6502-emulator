@@ -34,9 +34,9 @@ Official Reference: [Microsoft C# Coding Conventions](https://learn.microsoft.co
 
 ## Code Quality & Architecture
 
-- **Prefer simplicity over abstraction**: Do not introduce interfaces, factories, wrappers, base classes, dependency injection, or helper abstractions without a concrete need.
+- **Prefer simplicity over abstraction**: Do not introduce interfaces, factories, wrappers, base classes, IoC containers, or helper abstractions without a concrete need. Use direct constructor dependencies.
 
-- **Minimize dependencies**: A class should receive only the dependencies it actually needs. Avoid passing large object graphs through layers merely to access one value.
+- **Minimize dependencies**: A class should receive only the collaborators it actually needs. Avoid passing large object graphs through layers merely to access one value.
 
 - **Keep domain logic direct**: CPU instructions, addressing modes, registers, flags, and memory operations should be easy to follow from the code itself.
 
@@ -93,7 +93,7 @@ Official Reference: [Microsoft C# Coding Conventions](https://learn.microsoft.co
 
 - **Do not mirror the source structure solely for organizational symmetry**.
 
-- **Do not introduce dependency injection or interfaces where direct construction is simpler**.
+- **Do not introduce IoC containers, DI frameworks, or interfaces where direct constructor passing is simpler**.
 
 - **Do not add code for hypothetical requirements**.
 

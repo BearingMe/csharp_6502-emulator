@@ -2,256 +2,223 @@
 
 MOS 6502 emulator implemented in .NET 10 (C# 14).
 
-The architecture prioritizes correctness, simplicity, locality, and low coupling over abstraction or predefined organization.
+The architecture organizes emulator responsibilities across Domain, Application, and Infrastructure layers, prioritizing correctness, simplicity, locality, and low coupling over unnecessary indirection or framework abstractions.
 
 ## Core Principles
 
 ### Specification First
 
-The 6502 hardware specification is the source of truth.
+The 6502 hardware specification is the single source of truth.
 
-Implementation decisions must preserve the behavior defined by the specification.
+Implementation decisions must preserve the observable behavior defined by the specification.
 
-When implementation and specification disagree, the implementation is wrong.
+When the implementation and specification disagree, the implementation is incorrect.
 
 ### Simplicity First
 
-Do not introduce abstractions until the implementation demonstrates a real need for one.
+Do not introduce abstractions until the implementation demonstrates a genuine need for one.
 
 Prefer:
 
 - Direct method calls
 - Concrete types
+- Explicit constructor dependencies
 - Small cohesive components
-- Local state
-- Simple data structures
+- Local, visible state
+- Simple fixed-width data structures
 - Explicit control flow
 
 Avoid:
 
 - Unnecessary interfaces
-- Dependency injection
-- Factories
+- Dependency injection frameworks / IoC containers
+- Factories and service locators
 - Generic abstractions
-- Deep inheritance
-- Wrapper types without meaningful behavior
-- Indirection created solely for organization
+- Deep inheritance hierarchies
+- Wrapper types without meaningful domain behavior
+- Indirection created solely for organizational symmetry
 
 ### Low Coupling
 
-Components should depend only on what they actually need.
+Components depend only on the explicit collaborators they need to execute their responsibilities.
 
-Do not pass large objects through multiple layers merely because one piece of information is required.
-
-Adding a new instruction should not require threading dependencies through unrelated components.
+- `Bus` does not depend on `Cpu` or opcode logic.
+- `Cpu` represents pure register and status flag state.
+- `Addressing` depends only on `Cpu` (for index registers) and `Bus` (for indirect address fetching).
+- `Instructions` depends on `Cpu` (for accumulator, registers, and flags) and `Bus` (for memory reads, writes, and stack storage).
+- `Emulator` orchestrates these domain components into a complete runnable processor.
 
 ### Single Source of Truth
 
-CPU state belongs to the CPU.
+- Register and flag state belongs exclusively to `Cpu`.
+- Addressable memory belongs exclusively to `Bus`.
+- Domain operations operate on these real instances directly without duplicating state.
 
-This includes:
+---
 
-- `A`
-- `X`
-- `Y`
-- `PC`
-- `SP`
-- Processor status flags
+## Layer Responsibilities
 
-Memory belongs to the memory system.
+### Solution & Project Structure
 
-Do not duplicate CPU or memory state in other components.
+The codebase is organized into a single solution (`mos6502.slnx`) containing two projects:
 
-### Behavior Over Structure
+1. **`src/mos6502.csproj`**: Core emulator library and CLI functional test runner (`net10.0`).
+2. **`tests/mos6502.Tests/mos6502.Tests.csproj`**: Unit, integration, and functional test suite mirroring `src/`.
 
-Organize code around meaningful domain concepts, not arbitrary file sizes or symmetry.
-
-Do not create classes, interfaces, namespaces, or layers merely to make the project look organized.
-
-A large cohesive type is preferable to unnecessary fragmentation.
-
-Refactor when repeated code demonstrates a real shared concept.
+```
+src/
+├── Domain/
+│   ├── Entities/
+│   │   ├── Addressing.cs       # 6502 addressing mode calculations
+│   │   ├── Bus.cs              # 64 KiB addressable memory bus
+│   │   ├── Cpu.cs              # 6502 registers, stack pointer, and status state
+│   │   └── Instructions.cs     # 6502 ALU, stack, branching, and memory instructions
+│   ├── Enums/
+│   │   └── Status.cs           # Flags (Carry, Zero, Interrupt, Decimal, Break, Overflow, Negative)
+│   └── Objects/
+│       ├── AddressingResult.cs # Result container for effective address and addressing cycles
+│       └── InstructionResult.cs# Result container for base instruction cycles
+├── Application/
+│   └── Emulator.cs             # Application orchestrator: ROM loader, reset, Step() dispatch, cycle tally
+└── Infrastructure/
+    └── Cli/
+        ├── Program.cs          # Console host for automated test ROM execution
+        └── assets/roms/        # Embedded / bundled test ROMs (e.g., nestest.nes)
+```
 
 ---
 
 ## Domain Responsibilities
 
-### CPU
+### Memory Bus (`Mos6502.Domain.Entities.Bus`)
 
-The CPU represents the processor and owns its state.
+The memory bus represents the physical 64 KiB address space ($0000 to $FFFF).
 
-It is responsible for behavior intrinsic to the 6502, including:
+Responsibilities:
+- Stores flat 64 KiB RAM (`Ram[0x10000]`).
+- Provides byte-level access (`ReadByte`, `WriteByte`).
+- Provides 16-bit little-endian word reads (`ReadWord`).
+- Contains no CPU instruction semantics or cycle accounting.
 
-- Register manipulation
-- Status flags
-- Arithmetic and logic operations
-- Stack behavior
-- Program counter behavior
-- Instruction execution
+### CPU State (`Mos6502.Domain.Entities.Cpu`)
 
-The CPU must not depend on application or CLI concerns.
+The CPU represents the internal register and flag state of the MOS 6502.
 
-### Memory
+Owned state:
+- `A` (Accumulator, 8-bit)
+- `X` (Index Register X, 8-bit)
+- `Y` (Index Register Y, 8-bit)
+- `StackPointer` (Stack Pointer, 8-bit)
+- `PC` (Program Counter, 16-bit)
+- `Status` (Processor Status Flags, `Status` enum)
 
-The memory system owns addressable memory and memory access.
+Methods:
+- `Reset(u16 resetVectorAddress)`: Initializes registers and default reset flags (`StackPointer = 0xFD`, `Status = Status.Interrupt`, `PC = resetVectorAddress`).
 
-It is responsible for:
+### Addressing Modes (`Mos6502.Domain.Entities.Addressing`)
 
-- Reading memory
-- Writing memory
-- Address handling
-- The 6502 address space
+Calculates effective addresses and operand values according to 6502 addressing modes.
 
-It must not contain CPU instruction semantics.
+Constructor dependencies: `Addressing(Cpu cpu, Bus bus)`
 
-### Addressing Modes
+Supported addressing modes:
+- `Absolute`
+- `AbsoluteX` (with page crossing penalty detection)
+- `AbsoluteY` (with page crossing penalty detection)
+- `Immediate`
+- `IndexedIndirect` (Zero Page `(indirect, X)`)
+- `Indirect` (JMP indirect with hardware page-boundary wrap behavior)
+- `IndirectIndexed` (Zero Page `(indirect), Y` with page crossing penalty detection)
+- `Relative` (branch target offset)
+- `ZeroPage`
+- `ZeroPageX`
+- `ZeroPageY`
 
-Addressing behavior interprets instruction operands according to the 6502 specification.
+### Instructions (`Mos6502.Domain.Entities.Instructions`)
 
-It determines things such as:
+Implements the official 6502 instruction execution logic, ALU calculations, and status flag updates.
 
-- Operand location
-- Effective address
-- Operand value
+Constructor dependencies: `Instructions(Cpu cpu, Bus bus)`
 
-It must not contain instruction-specific behavior.
+Responsibilities:
+- Arithmetic and logical operations (`ADC`, `SBC`, `AND`, `ORA`, `EOR`, `BIT`, `CMP`, `CPX`, `CPY`).
+- Increments and decrements (`INC`, `DEC`, `INX`, `INY`, `DEX`, `DEY`).
+- Shifts and rotates (`ASL`, `LSR`, `ROL`, `ROR`).
+- Control flow and branches (`BCC`, `BCS`, `BEQ`, `BMI`, `BNE`, `BPL`, `BVC`, `BVS`, `JMP`, `JSR`, `RTS`, `RTI`, `BRK`).
+- Stack operations (`PHA`, `PHP`, `PLA`, `PLP`).
+- Status flag clears and sets (`CLC`, `SEC`, `CLI`, `SEI`, `CLV`, `CLD`, `SED`).
+- Register transfers (`TAX`, `TXA`, `TAY`, `TYA`, `TSX`, `TXS`).
+- Loads and stores (`LDA`, `LDX`, `LDY`, `STA`, `STX`, `STY`).
 
-### Instructions
+---
 
-Instruction behavior implements the semantics defined by the 6502 specification.
+## Application Responsibilities
 
-Instructions should reuse addressing behavior rather than duplicate address calculation.
+### Emulator Service (`Mos6502.Application.Emulator`)
 
-Instruction implementations should remain small and explicit.
+The `Emulator` coordinates the domain entities and exposes the execution interface.
 
-### Application
+Constructor: `Emulator(Bus bus)` creates internal `Cpu`, `Addressing`, and `Instructions` instances.
 
-Application-level code coordinates the emulator as a whole.
+Responsibilities:
+- Program loading via `LoadRom(byte[] rom, u16 startAddress)`.
+- Reset coordination (`Reset()`).
+- Step execution loop (`Step()`): fetches the next opcode at `PC`, decodes through an explicit `switch` expression, delegates to the appropriate instruction-mode execution method, advances `PC`, and returns total elapsed cycles for the step.
+- Named instruction helper methods (e.g., `AdcImmediate`, `StaAbsoluteX`, `JmpIndirect`) that assemble the addressing calculation with the instruction execution and return exact cycle counts.
 
-It may handle:
+---
 
-- Program loading
-- Reset
-- Execution loops
-- CLI interaction
-- High-level orchestration
+## Infrastructure Responsibilities
 
-Application code must not contain CPU semantics that belong to the domain.
+### CLI Test Runner (`Mos6502.Infrastructure.Cli.Program`)
+
+The CLI host executes external test ROMs (such as `nestest.nes`) against the emulator.
+
+Responsibilities:
+- Locates and parses binary test ROMs.
+- Initializes the `Bus` and `Emulator`.
+- Steps execution until completion or error condition.
+- Verifies output against hardware test vectors ($0002 status register in `nestest`).
 
 ---
 
 ## Dependency Rules
 
-The dependency direction is:
+The dependency flow strictly follows:
 
 ```
-Application
-    ↓
-Domain
+Infrastructure (Cli)
+        ↓
+   Application (Emulator)
+        ↓
+     Domain (Bus, Cpu, Addressing, Instructions)
 ```
 
-The domain must not depend on application or CLI concerns.
-
-Within the domain, dependencies should be kept as narrow as possible.
-
-For example, code that only needs memory access should depend on memory access, not on the entire CPU.
-
-Avoid dependency chains where a feature requires passing a reference through unrelated components.
-
-The exact decomposition may change as implementation experience reveals better boundaries.
+1. **Domain** has zero dependencies on Application, Infrastructure, or third-party packages. It relies exclusively on .NET standard primitives and `GlobalUsings`.
+2. **Application** coordinates Domain entities via direct constructor dependency passing.
+3. **Infrastructure** consumes Application services to run programs.
 
 ---
 
-## Execution Model
+## Testing Strategy Alignment
 
-A CPU execution cycle conceptually follows:
+Tests mirror the `src/` directory layout:
 
-```
-Fetch → Decode → Execute → Advance
-```
-
-The implementation may distribute these responsibilities across different components.
-
-The architecture must not require a specific component to own a particular stage.
-
-What matters is that observable execution matches the 6502 specification.
-
----
-
-## Testing
-
-Tests are executable specifications.
-
-They verify observable behavior against the 6502 specification rather than implementation details.
-
-Tests should:
-
-- Use real lightweight domain objects
-- Keep setup local and explicit
-- Test behavior rather than implementation
-- Minimize indirection
-- Remain readable without navigating through helpers
-- Cover meaningful specification edge cases
-
-Do not create production abstractions solely to make tests easier to organize.
-
-If production code is difficult to test, first question the production design rather than automatically adding test infrastructure.
+- `tests/mos6502.Tests/Domain/Entities/BusEntity/`: Memory access and bounds verification.
+- `tests/mos6502.Tests/Domain/Entities/CpuEntity/`: Register state and reset verification.
+- `tests/mos6502.Tests/Domain/Entities/AddressingEntity/`: Addressing calculations and page boundary cycle rules.
+- `tests/mos6502.Tests/Domain/Entities/InstructionsEntity/`: Opcode semantics and flag modifications.
+- `tests/mos6502.Tests/Application/Emulator/`: Opcode dispatch pipeline and multi-step execution workflows (`Functional/`).
 
 ---
 
 ## Fixed-Width Types
 
-Use types that accurately represent the 6502 architecture:
+Fixed-width types represent actual 6502 hardware widths:
 
-- `byte` for 8-bit values
-- `ushort` for 16-bit addresses
-- Explicit conversions when arithmetic crosses width boundaries
+- `u8` (`byte`) for 8-bit registers, flags, memory bytes, and opcodes.
+- `i8` (`sbyte`) for signed 8-bit branch offsets.
+- `u16` (`ushort`) for 16-bit addresses and pointers.
+- `cycle` (`int`) for cycle count bookkeeping.
 
-Custom fixed-width value types may be introduced when they provide meaningful domain behavior or prevent real classes of errors.
-
-Do not create wrappers merely for organizational consistency.
-
----
-
-## External Dependencies
-
-Core CPU and memory logic should use only the .NET standard library.
-
-Third-party dependencies must not be introduced into core domain logic without a concrete reason.
-
-Application and tooling code may have additional dependencies where appropriate.
-
----
-
-## Future Changes
-
-Do not design future architecture in advance.
-
-Introduce abstractions only when actual requirements justify them.
-
-Potential future concerns such as:
-
-- Memory-mapped I/O
-- Cartridges
-- Peripheral devices
-- Alternative memory implementations
-- Instruction dispatch optimization
-
-should be addressed when they become real requirements.
-
-Do not add interfaces or abstraction layers for hypothetical future implementations.
-
----
-
-## Architectural Decision Rule
-
-When choosing between designs, prefer the one that:
-
-1. Has fewer moving parts.
-2. Has fewer dependencies.
-3. Makes 6502 behavior easier to see.
-4. Requires less navigation to understand.
-5. Is easier to test directly.
-6. Is easier to change when the specification reveals a mistake.
-
-**The architecture exists to make the emulator easier to understand and change. The emulator does not exist to justify the architecture.**
+Type aliases are globally declared in `src/GlobalUsings.cs` and `tests/mos6502.Tests/GlobalUsings.cs`.

@@ -9,6 +9,7 @@ MOS 6502 microprocessor emulator written in C# 14 targeting .NET 10.
 ```bash
 dotnet build
 dotnet test
+dotnet run --project src/mos6502.csproj
 dotnet clean
 ```
 
@@ -44,10 +45,10 @@ Do not introduce unnecessary:
 - Fixtures
 - Interfaces
 - Factories
-- Dependency injection
+- IoC containers or dependency injection frameworks
 - Indirection
 
-Prefer readable repetition over abstractions that hide important behavior.
+Prefer direct constructor dependencies and readable repetition over abstractions that hide important behavior.
 
 ### Architecture
 
